@@ -24,7 +24,7 @@ export function detectCategory(text: string, top: Article | undefined): Category
 }
 
 export function detectSentiment(text: string): Sentiment {
-  if (/ふざけ|ありえない|あり得ない|最悪|返金しろ|訴え|金返せ|どうなって|いい加減|すぐに解除|何も悪いこと|納得でき|！！|!!|怒/.test(text)) return "angry";
+  if (/ふざけ|ありえない|あり得ない|最悪|返金しろ|訴え|金返せ|(お金|代金).{0,6}(返せ|戻せ)|どうなって|いい加減|すぐに解除|何も悪いこと|納得でき|！！|!!|怒/.test(text)) return "angry";
   if (/分からない|わからない|どうすれば|困って|教えて|できません|できない/.test(text)) return "confused";
   return "calm";
 }
@@ -53,7 +53,7 @@ const ESCALATION_RULES: { test: (text: string) => boolean; reason: string }[] = 
     test: (t) =>
       splitClauses(t).some(
         (c) =>
-          /返金|へんきん|ヘンキン|払い?戻|金返せ|(石|かけら|ジェム).{0,4}(返して|戻して)|(お金|代金|料金|課金(した)?分|購入分|かけら代).{0,6}(返して|戻して)|(購入|課金|決済).{0,10}(キャンセル|取り消)|(キャンセル|取り消).{0,10}(購入|課金|決済)|チャージバック/.test(c) &&
+          /返金|へんきん|ヘンキン|払い?戻|金返せ|(お金|代金).{0,6}(返せ|戻せ)|(石|かけら|ジェム).{0,4}(返して|戻して)|(お金|代金|料金|課金(した)?分|購入分|かけら代).{0,6}(返して|戻して)|(購入|課金|決済).{0,10}(キャンセル|取り消)|(キャンセル|取り消).{0,10}(購入|課金|決済)|チャージバック/.test(c) &&
           !NO_REFUND.test(c),
       ),
     reason: "返金の判断は担当者ではできないため",

@@ -236,14 +236,14 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
               />
               {risky.length > 0 && (
                 <ul id="risky-list" className="mt-2 space-y-1.5" aria-live="polite">
-                  {risky.map((r) =>
+                  {risky.map((r, i) =>
                     r.severity === "stop" ? (
-                      <li key={r.match} className="rounded-lg border border-bad/30 bg-surface px-3 py-2.5 text-sm">
+                      <li key={`${i}-${r.match}`} className="rounded-lg border border-bad/30 bg-surface px-3 py-2.5 text-sm">
                         <RedCircle block className="font-serif text-bad">「{r.match}」</RedCircle>
                         <ToruNote reason={`${r.reason}。直すまで送信できません`} className="mt-2 flex text-[13px]" />
                       </li>
                     ) : (
-                      <li key={r.match} className="rounded-lg border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
+                      <li key={`${i}-${r.match}`} className="rounded-lg border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
                         <p className="font-serif">「{r.match}」</p>
                         <p className="mt-1 flex items-start gap-1.5 text-[13px]">
                           <Icon name="alert" className="mt-0.5 size-3.5 shrink-0" />
