@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// お試しの人は匿名ログインし、自分の workspaces/{uid} の下だけを読み書きできる。
+// 他の人のデータは読めず、決められた形以外のデータは書き込めない。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /workspaces/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['seedBase'])
+        && request.resource.data.seedBase is string;
+
+      match /replies/{replyId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(["id", "inquiryId", "staffId", "at", "kind", "body", "aiDraft", "aiSource", "category", "citedArticleIds", "noArticleMatched"])
+          && request.resource.data.id == replyId
+          && request.resource.data.inquiryId is string && request.resource.data.inquiryId.size() <= 20
+          && request.resource.data.staffId is string && request.resource.data.staffId.size() <= 20
+          && request.resource.data.at is string && request.resource.data.at.size() <= 40
+          && request.resource.data.kind in ["sent", "escalated"]
+          && request.resource.data.body is string && request.resource.data.body.size() <= 2000
+          && (request.resource.data.aiDraft == null || (request.resource.data.aiDraft is string && request.resource.data.aiDraft.size() <= 4000))
+          && (request.resource.data.aiSource == null || request.resource.data.aiSource in ["gemini", "sample"])
+          && request.resource.data.category in ["payment", "account", "transfer", "bug", "event", "ban", "other"]
+          && request.resource.data.citedArticleIds is list && request.resource.data.citedArticleIds.size() <= 10
+          && request.resource.data.noArticleMatched is bool;
+        // 送った返信は後から書き換えない（監査のため）
+        allow update: if false;
+      }
+
+      match /statusPatches/{inquiryId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(["id", "status"])
+          && request.resource.data.id == inquiryId
+          && request.resource.data.status in ["new", "sent", "escalated"];
+      }
+    }
+  }
+}
