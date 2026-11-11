@@ -50,8 +50,8 @@
 | データ保存 | Cloud Firestore（匿名認証で一人ずつ分離）。未設定時はブラウザの localStorage |
 | AI | Firebase AI Logic + Gemini（Gemini Developer API の無料枠・Spark プラン） |
 | セキュリティ | Firestore セキュリティルール（[firestore.rules](firestore.rules)）、App Check（reCAPTCHA v3） |
-| 品質 | Vitest（単体テスト）、ESLint、GitHub Actions（PRごとに lint・型・テスト・ビルド） |
-| 公開 | Vercel |
+| 品質 | Vitest（単体テスト）、ESLint、GitHub Actions（push・PRで lint・型・テスト・ビルドを走らせる設定） |
+| 公開 | Vercel（予定） |
 
 ```
 src/
@@ -90,5 +90,4 @@ Firebase を使う場合は `.env.example` を `.env.local` にコピーして�
 ## 開発の進め方
 
 - 設計・仕様決め・動作確認は筆者が行い、実装は Claude Code に任せています。プロジェクトのルールは [CLAUDE.md](CLAUDE.md) にまとめています。
-- 機能ごとにブランチを切り、Pull Request で CI が通ってからマージしています。
 - AIが書いたコードは、テスト・型チェック・ブラウザでの操作確認の3つで確かめています。
