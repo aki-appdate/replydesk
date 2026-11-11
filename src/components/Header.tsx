@@ -32,7 +32,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-1 px-4 pt-2 sm:py-0">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 sm:gap-x-6 pt-2 sm:py-0">
         <Link href="/" className="rounded-lg py-1 sm:py-3" aria-label="ReplyDesk 紹介ページへ">
           <Logo />
         </Link>
@@ -55,12 +55,14 @@ export function Header() {
             );
           })}
         </nav>
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          <AiSourceBadge source={aiSource} />
+        <div className="ml-auto flex flex-nowrap items-center justify-end gap-1 sm:gap-2">
+          <span className="hidden sm:inline-flex">
+            <AiSourceBadge source={aiSource} />
+          </span>
           <label className="flex items-center gap-1.5 text-xs text-ink-muted">
             <span className="sr-only sm:not-sr-only">利用者</span>
             <select
-              className="h-8 max-w-44 rounded-lg border border-line-strong bg-surface px-2 text-sm text-ink"
+              className="h-8 max-w-36 rounded-lg sm:max-w-44 border border-line-strong bg-surface px-2 text-sm text-ink"
               value={me?.id ?? ""}
               onChange={(e) => {
                 const next = staff.find((m) => m.id === e.target.value);
@@ -93,7 +95,8 @@ export function Header() {
         </div>
       </div>
       <p className="border-t border-line bg-paper px-4 py-1 text-center text-[11px] text-ink-muted">
-        デモ版です。ゲーム・プレイヤー・問い合わせなどのデータはすべて架空で、返信も実際には送られません。
+        <span className="sm:hidden">デモ版：データはすべて架空で、返信は送られません</span>
+        <span className="hidden sm:inline">デモ版です。ゲーム・プレイヤー・問い合わせなどのデータはすべて架空で、返信も実際には送られません。</span>
       </p>
     </header>
   );

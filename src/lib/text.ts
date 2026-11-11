@@ -54,20 +54,40 @@ export function checkCitations(citations: Citation[], articles: Article[]): Chec
 }
 
 /** 担当者が勝手に約束してはいけない表現。マニュアルの「返信の基本ルール」「返金」の記事にもとづく */
-const RISKY: { pattern: RegExp; reason: string }[] = [
-  { pattern: /返金(いた)?します|返金させていただきます|返金を?お約束|返金に応じ|(代金|料金|金額|全額|ご購入分)を?(お)?(戻し|返し)(いた)?します|お戻しいたします|払い戻(し|しいた)します/, reason: "返金は担当者が約束できません（SVに相談）" },
-  { pattern: /補償(いた)?します|補填(いた)?します|お詫びの?(品|アイテム|石|かけら)を?(お送り|付与|配布)/, reason: "補償の約束は担当者だけで決められません" },
-  { pattern: /必ず(復旧|直り|直し|解決|反映)/, reason: "できるか分からないことを「必ず」と約束しています" },
-  { pattern: /絶対に?(大丈夫|問題ありません|直ります)/, reason: "断定しすぎの表現です" },
-  { pattern: /停止の?理由は|違反(の内容|行為)は.{0,10}(です|でした)/, reason: "利用停止の理由はお伝えしない決まりです" },
-  { pattern: /\d{2,4}-\d{2,4}-\d{3,4}/, reason: "電話番号のような情報が含まれています（個人情報を繰り返さない）" },
+/**
+ * 送信前に止める言い回し。言い方を少し変えても見逃さないよう、文ごとに
+ * 「話題の言葉」＋「約束・実行の言い方」がそろい、「できません・確認します」などの打ち消しがないものを止める。
+ */
+type RiskRule = { topic: RegExp; commit?: RegExp; unless?: RegExp; reason: string };
+
+// 「確認します」「ストアにお問い合わせください」のような、約束ではない言い方
+const NOT_A_PROMISE = /いたしかね|致しかね|できかね|でき(ない|ません)|お受けでき|行って(い|お)りません|お約束でき|確認(いた)?し|確認させ|担当部署|ストア|App Store|Google Play|お問い合わせ(ください|いただ)|ご案内でき|判断|検討/;
+
+const RISKY: RiskRule[] = [
+  {
+    topic: /返金|払い?戻し?|お戻し|ご返金|(代金|料金|金額|全額|ご購入分).{0,6}(お)?返し/,
+    commit: /いたします|します|させていただ|対応|手続き|進め|約束|応じ|お戻し|お返し/,
+    unless: NOT_A_PROMISE,
+    reason: "返金は担当者が約束できません（SVに相談）",
+  },
+  {
+    topic: /補償|補填|お詫び(の品|として|に)|代わりに.{0,10}(かけら|アイテム)|(かけら|アイテム|石).{0,10}(お送り|付与|配布|プレゼント)/,
+    commit: /いたします|します|させていただ|お送り|付与|配布|プレゼント/,
+    unless: NOT_A_PROMISE,
+    reason: "補償・お詫びの品の約束は担当者だけで決められません",
+  },
+  { topic: /必ず.{0,8}(復旧|直|解決|反映|戻|届)/, reason: "できるか分からないことを「必ず」と約束しています" },
+  { topic: /絶対に?(大丈夫|問題ありません|直ります|戻ります)|間違いなく(直|戻|届)/, reason: "断定しすぎの表現です" },
+  { topic: /停止の?理由は|違反(の内容|行為)は.{0,10}(です|でした)|(不正|チート).{0,10}(が確認された|を使用された)ため/, reason: "利用停止の理由はお伝えしない決まりです" },
+  { topic: /\d{2,4}-\d{2,4}-\d{3,4}/, reason: "電話番号のような情報が含まれています（個人情報を繰り返さない）" },
 ];
 
 export function findRiskyPhrases(text: string): { match: string; reason: string }[] {
   const out: { match: string; reason: string }[] = [];
+  const parts = text.split(/(?<=[。！？!?\n])/).map((x) => x.trim()).filter(Boolean);
   for (const r of RISKY) {
-    const m = text.match(r.pattern);
-    if (m) out.push({ match: m[0], reason: r.reason });
+    const hit = parts.find((sen) => r.topic.test(sen) && (!r.commit || r.commit.test(sen)) && !(r.unless && r.unless.test(sen)));
+    if (hit) out.push({ match: hit.length > 40 ? `${hit.slice(0, 40)}…` : hit, reason: r.reason });
   }
   return out;
 }

@@ -72,6 +72,7 @@ export function pct(n: number): string {
 // ---- アイコン（インラインSVG・線の太さ 1.75 で統一） ----
 
 type IconName =
+  | "minus"
   | "sparkle"
   | "check"
   | "cross"
@@ -90,6 +91,7 @@ type IconName =
 const PATHS: Record<IconName, React.ReactNode> = {
   sparkle: <path d="M12 4c.6 3.8 2.2 5.4 6 6-3.8.6-5.4 2.2-6 6-.6-3.8-2.2-5.4-6-6 3.8-.6 5.4-2.2 6-6Z" />,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
+  minus: <path d="M7 12h10" />,
   cross: <path d="M7 7l10 10M17 7 7 17" />,
   stop: (
     <>

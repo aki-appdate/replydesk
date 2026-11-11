@@ -193,7 +193,7 @@ export default function Home() {
               このアプリについて
             </h2>
             <dl className="grid text-sm sm:grid-cols-2">
-              <About label="作った人">ゲームアプリの問い合わせ対応でSVを経験した開発者が、Claude Code（AIコーディングツール）で設計・実装しました。</About>
+              <About label="作った人">ゲームアプリの問い合わせ対応でSVを経験した筆者が作りました。設計・仕様決め・動作確認は筆者、実装は Claude Code（AIコーディングツール）です。</About>
               <About label="使っている技術">Next.js / React / TypeScript / Tailwind CSS / Firebase（Firestore・匿名認証・AI Logic）/ Gemini / Vercel</About>
               <About label="AIが使えないとき">無料枠の上限や通信エラーのときは、記事の文を組み合わせる「見本の返答」に自動で切り替わり、画面は止まりません。</About>
               <About label="ソースコード">

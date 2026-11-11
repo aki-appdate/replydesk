@@ -6,11 +6,11 @@ import { cx, Icon } from "../ui";
 
 type State = "pass" | "stop" | "caution" | "none";
 
-const STYLE: Record<State, { icon: "check" | "stop" | "alert" | "cross" | "user"; mark: string; text: string; word: string }> = {
+const STYLE: Record<State, { icon: "check" | "stop" | "alert" | "cross" | "user" | "minus"; mark: string; text: string; word: string }> = {
   pass: { icon: "check", mark: "bg-good text-white", text: "text-ink", word: "OK" },
   stop: { icon: "stop", mark: "bg-bad text-white", text: "text-bad", word: "止まる" },
   caution: { icon: "alert", mark: "bg-warn text-white", text: "text-warn", word: "要確認" },
-  none: { icon: "check", mark: "bg-line-strong text-white", text: "text-ink-soft", word: "対象外" },
+  none: { icon: "minus", mark: "border border-line-strong bg-surface text-ink-muted", text: "text-ink-soft", word: "対象外" },
 };
 
 export type GateInput = {
@@ -54,7 +54,7 @@ export function SafetyGate(props: GateInput & { className?: string; compact?: bo
     <div className={cx("rounded-[10px] border", blocked ? "border-bad/40" : "border-line", props.className)}>
       <p className={cx("flex items-center justify-between gap-2 rounded-t-[10px] px-4 py-2 text-xs font-bold", blocked ? "bg-bad-soft text-bad" : "bg-paper text-ink-soft")}>
         <span>送信前の確認</span>
-        <span className="font-medium">{blocked ? "止まっている項目があります" : "3つの確認を通過しています"}</span>
+        <span className="font-medium">{blocked ? "止まっている項目があります" : rows.some((r) => r.state === "caution") ? "確かめてから送ってください" : rows.some((r) => r.state === "none") ? "止まっている項目はありません" : "3つの確認を通過しています"}</span>
       </p>
       <ul className="divide-y divide-line">
         {rows.map((r) => {

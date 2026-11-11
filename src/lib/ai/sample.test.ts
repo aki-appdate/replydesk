@@ -77,3 +77,20 @@ describe("SV相談が必要なものは急ぎ", () => {
     expect(detectUrgency("きちんと説明がなければ消費者センターに相談します", "bug", "calm")).toBe("high");
   });
 });
+
+describe("SV相談の判定（抜けと誤検知）", () => {
+  it.each(["訴訟を考えています", "警察に相談します", "購入をキャンセルしたい", "高校生の子が親のカードで課金しました", "チャージバックします"])("相談が必要：%s", async (s) => {
+    const { detectEscalation } = await import("./sample");
+    expect(detectEscalation(s).needed).toBe(true);
+  });
+  it("アプリが停止して落ちるのは、利用停止ではない", async () => {
+    const { detectEscalation, detectCategory } = await import("./sample");
+    expect(detectEscalation("アプリが停止して落ちます").needed).toBe(false);
+    expect(detectCategory("アプリが停止して落ちます", undefined)).toBe("bug");
+  });
+  it("ログインボーナスはイベント、ガチャの確率は課金", async () => {
+    const { detectCategory } = await import("./sample");
+    expect(detectCategory("ログインボーナスは何時に切り替わりますか？", undefined)).toBe("event");
+    expect(detectCategory("ガチャの確率がおかしいと思います", undefined)).toBe("payment");
+  });
+});

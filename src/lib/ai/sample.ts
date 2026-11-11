@@ -6,7 +6,11 @@ import { searchArticles, sentences, similarity } from "../text";
 import type { Article, Category, GapInsight, Inquiry, ReplyDraft, Sentiment, Urgency } from "../types";
 
 const CATEGORY_RULES: { category: Category; pattern: RegExp }[] = [
-  { category: "ban", pattern: /停止|BAN|ＢＡＮ|凍結|垢バン/i },
+  { category: "ban", pattern: /(アカウント|利用|垢).{0,6}停止|停止(され|処分)|BAN|ＢＡＮ|凍結|垢バン/i },
+  // 「ログイン」を含むがイベントの話
+  { category: "event", pattern: /ログインボーナス|ログボ/ },
+  // ガチャの確率など、お金に関わる苦情
+  { category: "payment", pattern: /確率|ガチャ.{0,10}(おかしい|詐欺)/ },
   { category: "transfer", pattern: /機種変|引き継|引継|新しい(スマホ|端末|iPhone|機種)|データ(移行|が消え)/ },
   { category: "payment", pattern: /課金|購入|買っ|買い|星のかけら|レシート|返金|請求|決済/ },
   { category: "bug", pattern: /落ち|固ま|重い|不具合|バグ|強制終了|フリーズ/ },
@@ -26,10 +30,10 @@ export function detectSentiment(text: string): Sentiment {
 }
 
 const ESCALATION_RULES: { pattern: RegExp; reason: string }[] = [
-  { pattern: /未成年|子ども|子供|息子|娘|小学生|中学生/, reason: "未成年の課金の可能性があるため" },
-  { pattern: /返金|返して|金返せ|払い戻/, reason: "返金の判断は担当者ではできないため" },
-  { pattern: /消費者センター|弁護士|訴え|法的/, reason: "法的な対応が必要になる可能性があるため" },
-  { pattern: /停止|BAN|ＢＡＮ|凍結/i, reason: "利用停止の判断は担当者ではできないため" },
+  { pattern: /未成年|子ども|子供|息子|娘|小学生|中学生|高校生|親の(カード|クレジット)/, reason: "未成年の課金の可能性があるため" },
+  { pattern: /返金|返して|金返せ|払い戻|(購入|課金|決済).{0,10}(キャンセル|取り消)|(キャンセル|取り消).{0,10}(購入|課金|決済)|チャージバック/, reason: "返金の判断は担当者ではできないため" },
+  { pattern: /消費者センター|弁護士|訴え|訴訟|法的|警察/, reason: "法的な対応が必要になる可能性があるため" },
+  { pattern: /(アカウント|利用|垢).{0,6}停止|停止(され|処分)|BAN|ＢＡＮ|凍結/i, reason: "利用停止の判断は担当者ではできないため" },
 ];
 
 export function detectEscalation(text: string): ReplyDraft["escalation"] {
@@ -120,12 +124,12 @@ export function sampleReplyDraft(inquiry: Inquiry, articles: Article[]): ReplyDr
 }
 
 /** マニュアルに載っていない質問を、話題ごとにまとめる */
-const TOPICS: { label: string; pattern: RegExp }[] = [
-  { label: "フレンド機能", pattern: /フレンド/ },
-  { label: "プレイヤー名の変更", pattern: /名前|ニックネーム|名前の変更/ },
-  { label: "退会・データ削除", pattern: /退会|削除|消したい/ },
-  { label: "領収書の発行", pattern: /領収書|インボイス/ },
-  { label: "コラボ・今後の予定", pattern: /コラボ|予定|いつ/ },
+const TOPICS: { label: string; pattern: RegExp; benefit: string }[] = [
+  { label: "フレンド機能", pattern: /フレンド/, benefit: "申請・上限・解除の3つの質問が混ざって届いています。仕様を1つの記事にまとめれば、担当者がその都度開発チームに確認する手間がなくなります" },
+  { label: "プレイヤー名の変更", pattern: /名前|ニックネーム|名前の変更/, benefit: "変更できるか・何回までかを担当者ごとに違う答え方をしている恐れがあります。回数や条件を決めて記事にすると答えがそろいます" },
+  { label: "退会・データ削除", pattern: /退会|削除|消したい/, benefit: "データを消すと元に戻せないため、手順と注意点をはっきり書いた記事が必要です。誤って案内すると取り返しがつきません" },
+  { label: "領収書の発行", pattern: /領収書|インボイス/, benefit: "購入はストア経由のため、ストアの購入履歴の出し方を案内する記事があれば、担当者がすぐ答えられます" },
+  { label: "コラボ・今後の予定", pattern: /コラボ|予定|いつ/, benefit: "未発表の予定は答えられないため、「お知らせをお待ちください」という決まった答え方を記事にしておくと迷いません" },
 ];
 
 export function sampleGapInsight(gaps: Inquiry[]): GapInsight {
@@ -137,8 +141,9 @@ export function sampleGapInsight(gaps: Inquiry[]): GapInsight {
   const ranked = [...groups.entries()].filter(([t]) => t !== "その他").sort((a, b) => b[1].length - a[1].length);
   const suggestions = ranked.slice(0, 3).map(([topic, qs]) => ({
     title: `「${topic}」の記事を追加`,
-    why: `マニュアルに近い記事がない問い合わせが${qs.length}件ありました。例：「${qs[0].subject}」。記事があれば、担当者が毎回調べる手間と回答のばらつきを減らせます。`,
-    evidenceInquiryIds: qs.slice(0, 5).map((q) => q.id),
+    why: `マニュアルに近い記事がない問い合わせが${qs.length}件ありました（例：${[...new Set(qs.map((q) => `「${q.subject}」`))].slice(0, 2).join("、")}）。${TOPICS.find((x) => x.label === topic)?.benefit ?? ""}。`,
+    // 根拠は同じ文面を1つにまとめ、違う言い方の問い合わせを見せる
+    evidenceInquiryIds: [...new Map(qs.map((q) => [q.body, q.id])).values()].slice(0, 5),
   }));
   if (!suggestions.length && gaps[0]) {
     suggestions.push({
