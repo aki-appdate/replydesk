@@ -42,6 +42,26 @@ export function Header() {
     { href: "/insights", label: "SVダッシュボード" },
   ];
 
+  // 利用者の切り替え。スマホ用（透明で重ねる）とPC用で同じものを使う
+  const userSelect = (className: string, label?: string) => (
+    <select
+      className={className}
+      aria-label={label}
+      value={me?.id ?? ""}
+      onChange={(e) => {
+        const next = staff.find((m) => m.id === e.target.value);
+        setMe(e.target.value);
+        router.push(next?.role === "sv" ? "/insights" : "/inbox");
+      }}
+    >
+      {staff.map((m) => (
+        <option key={m.id} value={m.id}>
+          {m.name}（{m.role === "sv" ? "SV" : "担当者"}）
+        </option>
+      ))}
+    </select>
+  );
+
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 sm:gap-x-6 pt-2 sm:py-0">
@@ -73,21 +93,29 @@ export function Header() {
           </span>
           <label className="flex items-center gap-1.5 text-xs text-ink-muted">
             <span className="sr-only sm:not-sr-only">利用者</span>
-            <select
-              className="h-8 max-w-36 rounded-lg sm:max-w-44 border border-line-strong bg-surface px-2 text-sm text-ink"
-              value={me?.id ?? ""}
-              onChange={(e) => {
-                const next = staff.find((m) => m.id === e.target.value);
-                setMe(e.target.value);
-                router.push(next?.role === "sv" ? "/insights" : "/inbox");
-              }}
-            >
-              {staff.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}（{m.role === "sv" ? "SV" : "担当者"}）
-                </option>
-              ))}
-            </select>
+            {/*
+              スマホでは「小川 さくら（担当…」と切れるので、選択欄の上に「役割の札＋名前」を重ねて見せる。
+              押すのは下の本物の select（透明）なので、端末の選択画面と読み上げはそのまま使える。
+            */}
+            <span className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-line-strong bg-surface pr-6 pl-1.5 text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand sm:hidden">
+              <span
+                aria-hidden="true"
+                className={cx(
+                  "rounded-[3px] px-1 text-[10px] leading-4 font-bold",
+                  me?.role === "sv" ? "border-t-2 border-warn bg-warn-soft text-warn" : "bg-brand-soft text-brand",
+                )}
+              >
+                {me?.role === "sv" ? "SV" : "担当者"}
+              </span>
+              <span aria-hidden="true" className="max-w-[6.5em] truncate text-[13px] font-medium">
+                {me?.name ?? "選ぶ"}
+              </span>
+              <svg aria-hidden="true" viewBox="0 0 12 12" className="absolute right-2 size-3 text-ink-muted" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+                <path d="m3 4.5 3 3 3-3" />
+              </svg>
+              {userSelect("absolute inset-0 size-full cursor-pointer opacity-0", "利用者を切り替える")}
+            </span>
+            {userSelect("hidden h-8 max-w-44 rounded-lg border border-line-strong bg-surface px-2 text-sm text-ink sm:block", "利用者")}
           </label>
           <button
             className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs text-ink-soft hover:bg-brand-soft hover:text-brand disabled:opacity-60"

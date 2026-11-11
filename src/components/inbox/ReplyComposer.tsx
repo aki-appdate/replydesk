@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useApp } from "../AppProvider";
 import { AiSourceBadge, Badge, btn, Card, CardTitle, cx, Icon } from "../ui";
 import { SafetyGate } from "./SafetyGate";
-import { RedCircle, ToruNote } from "../proof";
+import { RedCircle, SvTag, ToruNote } from "../proof";
 import { draftReply } from "@/lib/ai";
 import { detectEscalation } from "@/lib/ai/sample";
 import { CATEGORY_LABEL, SENTIMENT_LABEL, URGENCY_LABEL } from "@/lib/labels";
@@ -151,12 +151,10 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
             {note && <p className="text-xs text-ink-soft">{note}</p>}
 
             {escalation.needed && (
-              <div role="note" className="flex gap-3 rounded-lg border border-warn/30 bg-warn-soft px-4 py-3 text-sm text-warn">
-                <Icon name="user" className="mt-0.5 size-5" />
-                <div>
-                  <p className="font-bold">{isSv ? "SVの判断が必要な内容です" : "SVへの相談が必要な内容です"}</p>
-                  <p className="mt-0.5 leading-relaxed">{escalation.reason ?? "担当者だけで判断してはいけない内容です。"}</p>
-                </div>
+              <div role="note">
+                <SvTag label={isSv ? "SVの判断" : "SVへ"} reason={escalation.reason ?? "担当者だけで判断してはいけない内容です。"}>
+                  {isSv ? "SVとして内容を判断したうえで送信してください。" : "担当者からは送信できません。返信の下書きを添えて「SVに相談する」で引き継いでください。"}
+                </SvTag>
               </div>
             )}
 
@@ -230,37 +228,57 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
                 aria-invalid={stopped.length > 0}
                 aria-describedby={risky.length ? "risky-list" : undefined}
                 className={cx(
-                  "mt-1.5 w-full rounded-lg border bg-surface px-4 py-3 font-serif text-[15px] leading-[1.9] disabled:bg-paper",
+                  "mt-1.5 field-sizing-content min-h-72 w-full rounded-lg border bg-surface px-4 py-3 font-serif text-[15px] leading-[1.9] disabled:bg-paper",
                   stopped.length ? "border-bad" : "border-line-strong focus:border-brand",
                 )}
               />
               {risky.length > 0 && (
-                <ul id="risky-list" className="mt-2 space-y-1.5" aria-live="polite">
-                  {risky.map((r, i) =>
-                    r.severity === "stop" ? (
-                      <li key={`${i}-${r.match}`} className="rounded-lg border border-bad/30 bg-surface px-3 py-2.5 text-sm">
-                        <RedCircle block className="font-serif text-bad">「{r.match}」</RedCircle>
-                        <ToruNote reason={`${r.reason}。直すまで送信できません`} className="mt-2 flex text-[13px]" />
-                      </li>
-                    ) : (
-                      <li key={`${i}-${r.match}`} className="rounded-lg border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
-                        <p className="font-serif">「{r.match}」</p>
-                        <p className="mt-1 flex items-start gap-1.5 text-[13px]">
-                          <Icon name="alert" className="mt-0.5 size-3.5 shrink-0" />
-                          {r.reason}
-                        </p>
-                      </li>
-                    ),
+                <div id="risky-list" aria-live="polite" className={cx("mt-2 rounded-lg border", stopped.length ? "border-bad/30" : "border-warn/30")}>
+                  {stopped.length > 0 && (
+                    <p className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-bad/20 px-3.5 py-1.5 text-xs text-bad">
+                      <span className="font-bold">
+                        赤が<span className="tabular-nums">{stopped.length}</span>か所あります
+                      </span>
+                      <span>丸で囲んだ文を直すか消すと、送信できます</span>
+                    </p>
                   )}
-                </ul>
+                  <ol className="divide-y divide-dashed divide-line-strong">
+                    {risky.map((r, i) =>
+                      r.severity === "stop" ? (
+                        <li key={`${i}-${r.match}`} className="grid grid-cols-[1.25rem_1fr] gap-x-2 px-3.5 py-3 text-sm">
+                          <span aria-hidden="true" className="pt-1.5 font-serif text-xs font-bold text-bad tabular-nums">
+                            {risky.length > 1 ? i + 1 : ""}
+                          </span>
+                          <div className="min-w-0">
+                            <RedCircle block className="font-serif text-bad">「{r.match}」</RedCircle>
+                            <ToruNote reason={r.reason} className="mt-1.5 flex text-[13px]" />
+                          </div>
+                        </li>
+                      ) : (
+                        <li key={`${i}-${r.match}`} className="grid grid-cols-[1.25rem_1fr] gap-x-2 bg-warn-soft px-3.5 py-3 text-sm text-warn">
+                          <span aria-hidden="true" className="pt-0.5 font-serif text-xs font-bold tabular-nums">
+                            {risky.length > 1 ? i + 1 : ""}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-serif">「{r.match}」</p>
+                            <p className="mt-1 flex items-start gap-1.5 text-[13px]">
+                              <Icon name="alert" className="mt-0.5 size-3.5 shrink-0" />
+                              {r.reason}
+                            </p>
+                          </div>
+                        </li>
+                      ),
+                    )}
+                  </ol>
+                </div>
               )}
             </div>
 
-            <SafetyGate citations={draft ? citations : null} risky={risky} escalation={escalation} isSv={isSv} />
+            <SafetyGate citations={draft ? citations : null} risky={risky} escalation={escalation} isSv={isSv} waiting={onlyTemplate ? "本文を書くと送信できます" : undefined} />
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-[1fr_auto] items-center gap-2 sm:flex sm:flex-wrap">
               <button
-                className={btn.primary}
+                className={cx(btn.primary, "max-sm:col-span-2")}
                 disabled={sendBlocked}
                 onClick={() => submit("sent")}
                 title={stopped.length ? "注意が必要な表現を直すと送信できます" : blockedByEscalation ? "SVに相談してください" : onlyTemplate ? "本文を書くと送信できます" : undefined}

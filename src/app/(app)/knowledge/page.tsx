@@ -55,7 +55,7 @@ export default function KnowledgePage() {
                     className={cx("relative block w-full py-3 pr-4 pl-5 text-left", on ? "bg-brand-soft" : "hover:bg-paper")}
                   >
                     {on && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px] bg-brand" />}
-                    <span className={cx("font-serif text-[15px] leading-snug", on ? "font-bold text-brand" : "text-ink")}>{a.title}</span>
+                    <span className={cx("font-serif text-[15px] leading-snug [word-break:auto-phrase]", on ? "font-bold text-brand" : "text-ink")}>{a.title}</span>
                     <div className="mt-1 flex items-center gap-2 text-[11px] text-ink-muted">
                       <span>{CATEGORY_LABEL[a.category]}</span>
                       <span className="ml-auto tabular-nums">{n > 0 ? `根拠に ${n}回` : a.keywords.length ? "根拠に 0回" : "毎回AIに渡す"}</span>
@@ -68,7 +68,7 @@ export default function KnowledgePage() {
           </ul>
         </Card>
         {open && (
-          <Card className="scroll-mt-28" id="article-detail">
+          <Card className="scroll-mt-28 self-start lg:sticky lg:top-24" id="article-detail">
             <article className="px-6 py-6 sm:px-10 sm:py-8">
               <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
                 <Badge>{CATEGORY_LABEL[open.category]}</Badge>

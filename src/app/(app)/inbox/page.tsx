@@ -39,11 +39,12 @@ export default function InboxPage() {
             {me?.name}さん、未対応は急ぎのものから並んでいます。返信案は、根拠を確かめてから送ってください。
           </p>
         </div>
-        <dl className="grid w-full grid-cols-2 rounded-[10px] border border-line bg-surface sm:w-auto sm:grid-cols-4">
-          <Count label="未対応" value={lists.new.length} />
+        {/* 数字のタイルは並べない。机に置いた束の「件数の書き付け」として、1行で読み下す */}
+        <dl className="flex w-full flex-wrap items-baseline gap-x-5 gap-y-1 border-y border-line py-2 sm:w-auto sm:border-y-0 sm:py-0">
+          <Count label="未対応" value={lists.new.length} strong />
           <Count label="うち急ぎ" value={urgent} tone={urgent ? "bad" : undefined} note="課金・強い怒りなど" />
           <Count label="24時間以上" value={over24h} tone={over24h ? "bad" : undefined} icon={over24h > 0} note="目標は24時間以内" />
-          <Count label="SVに相談中" value={lists.escalated.length} />
+          <Count label="SVに相談中" value={lists.escalated.length} sep />
         </dl>
       </div>
 
@@ -87,14 +88,14 @@ export default function InboxPage() {
   );
 }
 
-function Count({ label, value, tone, note, icon }: { label: string; value: number; tone?: "bad"; note?: string; icon?: boolean }) {
+function Count({ label, value, tone, note, icon, strong, sep }: { label: string; value: number; tone?: "bad"; note?: string; icon?: boolean; strong?: boolean; sep?: boolean }) {
   return (
-    <div className="border-line px-4 py-2.5 max-sm:[&:nth-child(-n+2)]:border-b max-sm:[&:nth-child(even)]:border-l sm:[&+&]:border-l" title={note}>
-      <dt className={cx("flex items-center gap-1 text-xs whitespace-nowrap", tone ? "font-medium text-bad" : "text-ink-muted")}>
+    <div className={cx("flex items-baseline gap-1.5", sep && "sm:border-l sm:border-line sm:pl-5")} title={note}>
+      <dt className={cx("flex items-center gap-1 self-center text-xs whitespace-nowrap", tone ? "font-medium text-bad" : "text-ink-muted")}>
         {icon && <Icon name="clock" className="size-3.5" />}
         {label}
       </dt>
-      <dd className={cx("mt-0.5 text-2xl leading-tight font-bold", tone && "text-bad")}>
+      <dd className={cx("leading-none font-bold tabular-nums", strong ? "text-[26px]" : "text-lg", tone && "text-bad")}>
         {value}
         <span className="ml-0.5 text-xs font-medium">件</span>
       </dd>

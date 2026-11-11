@@ -45,7 +45,8 @@ export function gateStates({ citations, risky, escalation, isSv }: GateInput) {
   return { evidence, wording, judge };
 }
 
-export function SafetyGate(props: GateInput & { className?: string; compact?: boolean }) {
+/** waiting：3つの確認とは別の理由でまだ送れないとき（ひな形のままなど）の一言。「止まっていません」と矛盾させない */
+export function SafetyGate(props: GateInput & { className?: string; compact?: boolean; waiting?: string }) {
   const g = gateStates(props);
   const rows = [
     { key: "根拠", ...g.evidence },
@@ -57,7 +58,7 @@ export function SafetyGate(props: GateInput & { className?: string; compact?: bo
     <div className={cx("rounded-[10px] border", blocked ? "border-bad/40" : "border-line", props.className)}>
       <p className={cx("flex items-center justify-between gap-2 rounded-t-[10px] px-4 py-2 text-xs font-bold", blocked ? "bg-bad-soft text-bad" : "bg-paper text-ink-soft")}>
         <span>送信前の確認</span>
-        <span className="font-medium">{blocked ? "止まっている項目があります" : rows.some((r) => r.state === "caution") ? "確かめてから送ってください" : rows.some((r) => r.state === "none") ? "止まっている項目はありません" : "3つの確認を通過しています"}</span>
+        <span className="font-medium">{blocked ? "止まっている項目があります" : props.waiting ? props.waiting : rows.some((r) => r.state === "caution") ? "確かめてから送ってください" : rows.some((r) => r.state === "none") ? "止まっている項目はありません" : "3つの確認を通過しています"}</span>
       </p>
       <ul className="divide-y divide-line">
         {rows.map((r) => {

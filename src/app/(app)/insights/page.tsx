@@ -80,7 +80,7 @@ export default function InsightsPage() {
             <span className="font-bold tracking-wider text-ink-soft">申し送り</span>
             <span>{rangeLabel}の集計</span>
           </p>
-          <div className="ruled mt-1 max-w-[42em] font-serif text-[15px] text-ink">
+          <div className="ruled mt-1 font-serif text-[15px] text-ink [word-break:auto-phrase]">
             <p>
               届いた問い合わせは<Num>{s.received}件</Num>。未対応が<Num tone={s.open ? "bad" : undefined}>{s.open}件</Num>、SVに相談中が<Num>{s.escalated}件</Num>あります。
             </p>

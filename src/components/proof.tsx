@@ -61,12 +61,12 @@ export function MatchNote({ title, className }: { title: string; className?: str
 }
 
 /** 「SVへ」の札。担当者が判断してはいけない内容に貼る。上の帯はのり代 */
-export function SvTag({ reason, children, className }: { reason: string | null; children?: React.ReactNode; className?: string }) {
+export function SvTag({ reason, children, className, label = "SVへ" }: { reason: string | null; children?: React.ReactNode; className?: string; label?: string }) {
   return (
     <div className={cx("rounded-[3px] border-t-[5px] border-warn bg-warn-soft px-3.5 py-3 text-warn", className)}>
       <p className="flex items-center gap-1.5 font-serif text-base font-bold">
         <Icon name="user" className="size-4" />
-        SVへ
+        {label}
       </p>
       {reason && <p className="mt-1 text-sm font-medium">{reason}</p>}
       {children && <div className="mt-1 text-sm leading-relaxed">{children}</div>}

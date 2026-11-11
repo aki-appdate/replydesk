@@ -102,7 +102,7 @@ export function GapPanel({ gaps }: { gaps: Inquiry[] }) {
             ) : (
               <div className={cx("transition-opacity", loading && "opacity-50")} aria-busy={loading}>
                 {state.note && <p className="mb-3 text-xs text-ink-soft">{state.note}</p>}
-                <p className="font-serif text-[17px] leading-snug font-bold">{state.value.headline}</p>
+                <p className="font-serif text-[17px] leading-snug font-bold [word-break:auto-phrase] [text-wrap:balance]">{state.value.headline}</p>
                 <ol className="mt-5 grid gap-x-5 gap-y-6 md:grid-cols-[repeat(auto-fit,minmax(15rem,1fr))]">
                   {state.value.suggestions.map((s, i) => (
                     <li
@@ -114,7 +114,7 @@ export function GapPanel({ gaps }: { gaps: Inquiry[] }) {
                       onBlur={() => setActive(null)}
                     >
                       <p className="text-[11px] font-bold tracking-wider text-ink-soft">下書き {i + 1}</p>
-                      <p className="mt-1 font-serif text-[15px] leading-snug font-bold">{s.title}</p>
+                      <h3 className="mt-1 font-serif text-[15px] leading-snug font-bold">{s.title}</h3>
                       <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{s.why}</p>
                       <p className="mt-3 text-[11px] font-bold text-ink-soft">根拠にした問い合わせ（{s.evidenceInquiryIds.length}件）</p>
                       <ul className="mt-1 space-y-1">

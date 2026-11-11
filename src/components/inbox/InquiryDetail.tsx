@@ -22,7 +22,7 @@ export function InquiryDetail({ inquiry, onSending, onNext }: { inquiry: Inquiry
 
   return (
     <div className="space-y-5">
-      <Card>
+      <Card className="overflow-hidden">
         <div className="px-5 pt-5 pb-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
             <span className="flex items-center gap-1">
@@ -46,7 +46,7 @@ export function InquiryDetail({ inquiry, onSending, onNext }: { inquiry: Inquiry
         <dl className="grid grid-cols-2 border-t border-line bg-paper text-sm sm:grid-cols-3">
           <Item label="プレイヤー名" value={inquiry.playerName} />
           <Item label="プレイヤーID" value={inquiry.playerId} mono />
-          <Item label="端末" value={inquiry.device} />
+          <Item label="端末" value={inquiry.device} className="max-sm:col-span-2" />
         </dl>
       </Card>
 
@@ -103,11 +103,11 @@ export function InquiryDetail({ inquiry, onSending, onNext }: { inquiry: Inquiry
   );
 }
 
-function Item({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function Item({ label, value, mono, className }: { label: string; value: string; mono?: boolean; className?: string }) {
   return (
-    <div className="px-5 py-2.5 sm:px-6 max-sm:[&:nth-child(-n+2)]:border-b max-sm:[&:nth-child(-n+2)]:border-line">
+    <div className={cx("px-5 py-2.5 sm:px-6 max-sm:[&:nth-child(-n+2)]:border-b max-sm:[&:nth-child(-n+2)]:border-line", className)}>
       <dt className="text-[11px] text-ink-muted">{label}</dt>
-      <dd className={cx("mt-0.5 break-all text-ink", mono && "tabular-nums")}>{value}</dd>
+      <dd className={cx("mt-0.5 [overflow-wrap:anywhere] text-ink", mono && "tabular-nums")}>{value}</dd>
     </div>
   );
 }
