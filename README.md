@@ -1,5 +1,7 @@
 # ReplyDesk — 問い合わせ対応のAI返信アシスタント
 
+[![CI](https://github.com/aki-appdate/replydesk/actions/workflows/ci.yml/badge.svg)](https://github.com/aki-appdate/replydesk/actions/workflows/ci.yml)
+
 ユーザーからの問い合わせに、**社内マニュアルだけを根拠に**AIが返信案を作り、担当者が確認してから送るWebアプリです。
 ゲームアプリのメール問い合わせ対応でSV（5〜6名のチームリーダー）をしていた筆者が、現場で感じた課題をもとに作りました。設計・仕様決め・動作確認は筆者、実装は Claude Code（AIコーディングツール）です。
 
