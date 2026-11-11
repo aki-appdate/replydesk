@@ -272,6 +272,7 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
                 <button
                   className={cx(btn.secondary, blockedByEscalation && "border-warn text-warn hover:border-warn hover:text-warn")}
                   disabled={phase === "sending" || onlyTemplate}
+                  title={onlyTemplate ? "本文を書くと相談できます" : undefined}
                   onClick={() => submit("escalated")}
                 >
                   <Icon name="user" />
@@ -284,7 +285,11 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
             </div>
             {(stopped.length > 0 || blockedByEscalation || onlyTemplate) && (
               <p className="text-xs text-ink-muted">
-                {blockedByEscalation
+                {onlyTemplate
+                  ? blockedByEscalation
+                    ? "担当者の判断で送れない内容です。宛名と結びのあいだに状況を書くと、SVに相談できます。"
+                    : "宛名と結びのあいだに、お客さまへの本文を書くと送信できます。"
+                  : blockedByEscalation
                   ? "担当者の判断で送れない内容のため、SVへの相談だけができます。"
                   : stopped.length > 0
                     ? "注意が必要な表現があるため、直すまで送信できません。"

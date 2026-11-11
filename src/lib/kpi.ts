@@ -14,6 +14,8 @@ export type DeskStats = {
    *  分母＝対応済み＋受信から24時間以上たった未対応。まだ24時間たっていない未対応は数えない。
    *  分母が0（受信0件、または届いたばかりで未対応のものだけ）のときは、0%と見せないよう null */
   within24hRate: number | null;
+  /** 対応率の分子・分母（画面に「4件中4件」と添えて、割合だけが独り歩きしないようにする） */
+  within24h: { ok: number; counted: number };
   /** AIの返信案がどれだけそのまま使われたか（0〜1）。AIを使った返信が0件ならnull */
   aiAdoption: number | null;
   aiUsedRate: number;
@@ -76,17 +78,16 @@ export function computeDeskStats(params: {
     return r ? r.noArticleMatched : searchArticles(`${q.subject}\n${q.body}`, articles).length === 0;
   });
 
+  const overdueOpen = inquiries.filter((q) => !firstReply.has(q.id) && now.getTime() - new Date(q.receivedAt).getTime() > 24 * 3600 * 1000).length;
+  const within24h = { ok: waits.filter((w) => w <= 24 * 60).length, counted: waits.length + overdueOpen };
   return {
     received: inquiries.length,
     answered: inquiries.filter((q) => q.status === "sent").length,
     escalated: inquiries.filter((q) => q.status === "escalated").length,
     open: inquiries.filter((q) => q.status === "new").length,
     avgFirstResponseMin: waits.length ? waits.reduce((s, x) => s + x, 0) / waits.length : null,
-    within24hRate: (() => {
-      const overdueOpen = inquiries.filter((q) => !firstReply.has(q.id) && now.getTime() - new Date(q.receivedAt).getTime() > 24 * 3600 * 1000).length;
-      const denom = waits.length + overdueOpen;
-      return denom ? waits.filter((w) => w <= 24 * 60).length / denom : null;
-    })(),
+    within24hRate: within24h.counted ? within24h.ok / within24h.counted : null,
+    within24h,
     aiAdoption: withAi.length ? withAi.reduce((s, r) => s + similarity(r.aiDraft!, r.body), 0) / withAi.length : null,
     aiUsedRate: sentCount ? withAi.length / sentCount : 0,
     byCategory,

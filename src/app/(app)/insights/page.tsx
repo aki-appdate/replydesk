@@ -65,6 +65,11 @@ export default function InsightsPage() {
           <div className="mt-4 h-2 rounded-full bg-brand-soft" role="img" aria-label={`目標の24時間以内に対応できた割合 ${s.within24hRate === null ? "まだ数えられません" : pct(s.within24hRate)}`}>
             <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (s.within24hRate ?? 0) * 100)}%` }} />
           </div>
+          {s.within24hRate !== null && (
+            <p className="mt-2 text-xs text-ink-soft tabular-nums">
+              数えた{s.within24h.counted}件のうち{s.within24h.ok}件（届いて24時間たっていない未対応は数えません）
+            </p>
+          )}
           {s.within24hRate === null && <p className="mt-2 text-xs text-ink-soft">{s.received ? "この期間に対応した問い合わせがまだないため、数えられません。" : "この期間に届いた問い合わせはありません。"}</p>}
           <p className="mt-2 text-xs text-ink-muted">
             最初の対応まで平均 <b className="font-medium text-ink">{formatMinutes(s.avgFirstResponseMin)}</b>
