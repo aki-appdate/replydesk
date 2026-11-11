@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ARTICLES } from "../knowledge";
 import { replyDraftSchema } from "../schemas";
+import { createSeedData } from "../seed";
 import { checkCitations, findRiskyPhrases } from "../text";
 import type { Inquiry } from "../types";
-import { sampleGapInsight, sampleReplyDraft } from "./sample";
+import { detectCategory, detectEscalation, detectUrgency, sampleGapInsight, sampleReplyDraft } from "./sample";
 
 function inquiry(subject: string, body: string, id = "q-1"): Inquiry {
   return {
@@ -72,25 +73,54 @@ describe("sampleGapInsight", () => {
 });
 
 describe("SV相談が必要なものは急ぎ", () => {
-  it("消費者センターの話は、分類にかかわらず急ぎ", async () => {
-    const { detectUrgency } = await import("./sample");
+  it("消費者センターの話は、分類にかかわらず急ぎ", () => {
     expect(detectUrgency("きちんと説明がなければ消費者センターに相談します", "bug", "calm")).toBe("high");
   });
 });
 
 describe("SV相談の判定（抜けと誤検知）", () => {
-  it.each(["訴訟を考えています", "警察に相談します", "購入をキャンセルしたい", "高校生の子が親のカードで課金しました", "チャージバックします"])("相談が必要：%s", async (s) => {
-    const { detectEscalation } = await import("./sample");
+  it.each([
+    "訴訟を考えています",
+    "警察に相談します",
+    "購入をキャンセルしたい",
+    "高校生の子が親のカードで課金しました",
+    "チャージバックします",
+    "払ったお金を戻してほしい",
+    "うちの子が課金しました",
+    "孫が勝手に課金していました",
+    "クレジットカードの不正利用です",
+    "小学生の息子が、私のスマホで勝手に課金していました。",
+    "返金してほしいです",
+  ])("相談が必要：%s", (s) => {
     expect(detectEscalation(s).needed).toBe(true);
   });
-  it("アプリが停止して落ちるのは、利用停止ではない", async () => {
-    const { detectEscalation, detectCategory } = await import("./sample");
-    expect(detectEscalation("アプリが停止して落ちます").needed).toBe(false);
+
+  it.each(["息子と協力プレイしたいです", "子供の頃から好きなゲームです", "返金はいりません、ログインできません", "アプリが停止して落ちます", "データを戻してください"])(
+    "相談は不要：%s",
+    (s) => {
+      expect(detectEscalation(s).needed).toBe(false);
+    },
+  );
+
+  it("アプリが停止して落ちるのは、利用停止ではなく不具合", () => {
     expect(detectCategory("アプリが停止して落ちます", undefined)).toBe("bug");
   });
-  it("ログインボーナスはイベント、ガチャの確率は課金", async () => {
-    const { detectCategory } = await import("./sample");
+
+  it("ログインボーナスはイベント、ガチャの確率は課金", () => {
     expect(detectCategory("ログインボーナスは何時に切り替わりますか？", undefined)).toBe("event");
     expect(detectCategory("ガチャの確率がおかしいと思います", undefined)).toBe("payment");
+  });
+});
+
+describe("デモデータと見本の返答は、言い回しの確認で止まらない", () => {
+  const data = createSeedData(new Date(2026, 10, 11, 17, 0));
+  it("送信済みの返信はすべて通る", () => {
+    const sent = data.replies.filter((r) => r.kind === "sent");
+    expect(sent.length).toBeGreaterThan(100);
+    expect(sent.filter((r) => findRiskyPhrases(r.body).length > 0).map((r) => r.id)).toEqual([]);
+  });
+  it("どの問い合わせでも、見本の返答は通る", () => {
+    const stopped = data.inquiries.filter((q) => findRiskyPhrases(sampleReplyDraft(q, ARTICLES).reply).length > 0);
+    expect(stopped.map((q) => q.id)).toEqual([]);
   });
 });

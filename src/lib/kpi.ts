@@ -11,8 +11,9 @@ export type DeskStats = {
   /** 受信から最初の対応までの平均（分）。対応が0件ならnull */
   avgFirstResponseMin: number | null;
   /** 24時間以内に対応できた割合（マニュアルの「返信の基本ルール」）。
-   *  分母＝対応済み＋受信から24時間以上たった未対応。まだ24時間たっていない未対応は数えない */
-  within24hRate: number;
+   *  分母＝対応済み＋受信から24時間以上たった未対応。まだ24時間たっていない未対応は数えない。
+   *  分母が0（受信0件、または届いたばかりで未対応のものだけ）のときは、0%と見せないよう null */
+  within24hRate: number | null;
   /** AIの返信案がどれだけそのまま使われたか（0〜1）。AIを使った返信が0件ならnull */
   aiAdoption: number | null;
   aiUsedRate: number;
@@ -84,7 +85,7 @@ export function computeDeskStats(params: {
     within24hRate: (() => {
       const overdueOpen = inquiries.filter((q) => !firstReply.has(q.id) && now.getTime() - new Date(q.receivedAt).getTime() > 24 * 3600 * 1000).length;
       const denom = waits.length + overdueOpen;
-      return denom ? waits.filter((w) => w <= 24 * 60).length / denom : 0;
+      return denom ? waits.filter((w) => w <= 24 * 60).length / denom : null;
     })(),
     aiAdoption: withAi.length ? withAi.reduce((s, r) => s + similarity(r.aiDraft!, r.body), 0) / withAi.length : null,
     aiUsedRate: sentCount ? withAi.length / sentCount : 0,

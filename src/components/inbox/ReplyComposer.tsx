@@ -13,6 +13,11 @@ import type { AiSource, Article, Inquiry, Reply, ReplyDraft } from "@/lib/types"
 
 type Phase = "idle" | "drafting" | "review" | "sending";
 
+/** 「自分で書く」のひな形の行（宛名・あいさつ・結び）。これだけでは送れない */
+function templateLines(inquiry: Inquiry): string[] {
+  return [`${inquiry.playerName} 様`, "ほしぞらテイルズ サポート窓口です。お問い合わせいただき、ありがとうございます。", "引き続き、ほしぞらテイルズをよろしくお願いいたします。"];
+}
+
 export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry: Inquiry; matches: Article[]; onSending: () => void; onNext: () => void }) {
   const { me, articles, saveReply } = useApp();
   const [phase, setPhase] = useState<Phase>("idle");
@@ -23,11 +28,15 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const citations = useMemo(() => (draft ? checkCitations(draft.citations, articles) : []), [draft, articles]);
-  const risky = useMemo(() => findRiskyPhrases(body), [body]);
-  const invalidCount = citations.filter((c) => !c.valid).length;
   // SVは相談を受ける側なので、相談が必要な内容でも最終判断して送れる
   const isSv = me?.role === "sv";
+  const citations = useMemo(() => (draft ? checkCitations(draft.citations, articles) : []), [draft, articles]);
+  // SVが判断して書く返金・補償は「要確認」、それ以外の危ない言い回しは止める
+  const risky = useMemo(() => findRiskyPhrases(body, { isSv }), [body, isSv]);
+  const stopped = risky.filter((r) => r.severity === "stop");
+  // ひな形（宛名・あいさつ・結び）だけで、本文が書かれていない
+  const onlyTemplate = useMemo(() => body.split("\n").every((l) => !l.trim() || templateLines(inquiry).includes(l.trim())), [body, inquiry]);
+  const invalidCount = citations.filter((c) => !c.valid).length;
   // 「自分で書く」を選んでも、問い合わせの本文からSV相談が必要かを必ず判定する（AIの案の有無に左右されない）
   const ruleEscalation = useMemo(() => detectEscalation(`${inquiry.subject}\n${inquiry.body}`), [inquiry]);
   const escalation = draft?.escalation.needed ? draft.escalation : ruleEscalation;
@@ -46,7 +55,8 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
 
   function writeManually() {
     setDraft(null);
-    setBody(`${inquiry.playerName} 様\n\nほしぞらテイルズ サポート窓口です。お問い合わせいただき、ありがとうございます。\n\n\n\n引き続き、ほしぞらテイルズをよろしくお願いいたします。`);
+    const [greeting, intro, closing] = templateLines(inquiry);
+    setBody(`${greeting}\n\n${intro}\n\n\n\n${closing}`);
     setPhase("review");
   }
 
@@ -96,7 +106,7 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
     );
   }
 
-  const sendBlocked = phase === "sending" || !body.trim() || risky.length > 0 || blockedByEscalation;
+  const sendBlocked = phase === "sending" || onlyTemplate || stopped.length > 0 || blockedByEscalation;
 
   return (
     <Card>
@@ -217,21 +227,31 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
                 rows={12}
                 maxLength={2000}
                 disabled={phase === "sending"}
-                aria-invalid={risky.length > 0}
+                aria-invalid={stopped.length > 0}
                 aria-describedby={risky.length ? "risky-list" : undefined}
                 className={cx(
                   "mt-1.5 w-full rounded-lg border bg-surface px-4 py-3 font-serif text-[15px] leading-[1.9] disabled:bg-paper",
-                  risky.length ? "border-bad" : "border-line-strong focus:border-brand",
+                  stopped.length ? "border-bad" : "border-line-strong focus:border-brand",
                 )}
               />
               {risky.length > 0 && (
                 <ul id="risky-list" className="mt-2 space-y-1.5" aria-live="polite">
-                  {risky.map((r) => (
-                    <li key={r.match} className="rounded-lg border border-bad/30 bg-surface px-3 py-2.5 text-sm">
-                      <RedCircle block className="font-serif text-bad">「{r.match}」</RedCircle>
-                      <ToruNote reason={`${r.reason}。直すまで送信できません`} className="mt-2 flex text-[13px]" />
-                    </li>
-                  ))}
+                  {risky.map((r) =>
+                    r.severity === "stop" ? (
+                      <li key={r.match} className="rounded-lg border border-bad/30 bg-surface px-3 py-2.5 text-sm">
+                        <RedCircle block className="font-serif text-bad">「{r.match}」</RedCircle>
+                        <ToruNote reason={`${r.reason}。直すまで送信できません`} className="mt-2 flex text-[13px]" />
+                      </li>
+                    ) : (
+                      <li key={r.match} className="rounded-lg border border-warn/30 bg-warn-soft px-3 py-2.5 text-sm text-warn">
+                        <p className="font-serif">「{r.match}」</p>
+                        <p className="mt-1 flex items-start gap-1.5 text-[13px]">
+                          <Icon name="alert" className="mt-0.5 size-3.5 shrink-0" />
+                          {r.reason}
+                        </p>
+                      </li>
+                    ),
+                  )}
                 </ul>
               )}
             </div>
@@ -243,7 +263,7 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
                 className={btn.primary}
                 disabled={sendBlocked}
                 onClick={() => submit("sent")}
-                title={risky.length ? "注意が必要な表現を直すと送信できます" : blockedByEscalation ? "SVに相談してください" : undefined}
+                title={stopped.length ? "注意が必要な表現を直すと送信できます" : blockedByEscalation ? "SVに相談してください" : onlyTemplate ? "本文を書くと送信できます" : undefined}
               >
                 <Icon name="send" />
                 {phase === "sending" ? "送信しています…" : "確認したので送信する"}
@@ -251,7 +271,7 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
               {!isSv && (
                 <button
                   className={cx(btn.secondary, blockedByEscalation && "border-warn text-warn hover:border-warn hover:text-warn")}
-                  disabled={phase === "sending" || !body.trim()}
+                  disabled={phase === "sending" || onlyTemplate}
                   onClick={() => submit("escalated")}
                 >
                   <Icon name="user" />
@@ -262,9 +282,13 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
                 やり直す
               </button>
             </div>
-            {(risky.length > 0 || blockedByEscalation) && (
+            {(stopped.length > 0 || blockedByEscalation || onlyTemplate) && (
               <p className="text-xs text-ink-muted">
-                {blockedByEscalation ? "担当者の判断で送れない内容のため、SVへの相談だけができます。" : "注意が必要な表現があるため、直すまで送信できません。"}
+                {blockedByEscalation
+                  ? "担当者の判断で送れない内容のため、SVへの相談だけができます。"
+                  : stopped.length > 0
+                    ? "注意が必要な表現があるため、直すまで送信できません。"
+                    : "宛名と結びのあいだに、お客さまへの本文を書くと送信できます。"}
               </p>
             )}
           </>

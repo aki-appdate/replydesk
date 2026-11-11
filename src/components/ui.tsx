@@ -65,7 +65,9 @@ export function AiSourceBadge({ source, onDark = false }: { source: AiSource; on
   );
 }
 
-export function pct(n: number): string {
+/** 割合を「12.3%」の形にする。数えられないとき（null）は「—」 */
+export function pct(n: number | null): string {
+  if (n === null) return "—";
   return `${(Math.round(n * 1000) / 10).toFixed(1)}%`;
 }
 

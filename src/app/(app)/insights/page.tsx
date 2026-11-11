@@ -61,10 +61,11 @@ export default function InsightsPage() {
       <section aria-label={`${rangeLabel}の申し送り`} className="grid overflow-hidden rounded-[10px] border border-line bg-surface lg:grid-cols-[22rem_1fr]">
         <div className="border-b border-line px-6 py-5 lg:border-r lg:border-b-0">
           <p className="text-xs font-medium text-ink-soft">24時間以内に対応できた割合</p>
-          <p className="mt-2 text-[3.5rem] leading-none font-bold tracking-tight">{pct(s.within24hRate)}</p>
-          <div className="mt-4 h-2 rounded-full bg-brand-soft" role="img" aria-label={`目標の24時間以内に対応できた割合 ${pct(s.within24hRate)}`}>
-            <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, s.within24hRate * 100)}%` }} />
+          <p className={cx("mt-2 text-[3.5rem] leading-none font-bold tracking-tight", s.within24hRate === null && "text-ink-muted")}>{pct(s.within24hRate)}</p>
+          <div className="mt-4 h-2 rounded-full bg-brand-soft" role="img" aria-label={`目標の24時間以内に対応できた割合 ${s.within24hRate === null ? "まだ数えられません" : pct(s.within24hRate)}`}>
+            <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (s.within24hRate ?? 0) * 100)}%` }} />
           </div>
+          {s.within24hRate === null && <p className="mt-2 text-xs text-ink-soft">{s.received ? "この期間に対応した問い合わせがまだないため、数えられません。" : "この期間に届いた問い合わせはありません。"}</p>}
           <p className="mt-2 text-xs text-ink-muted">
             最初の対応まで平均 <b className="font-medium text-ink">{formatMinutes(s.avgFirstResponseMin)}</b>
           </p>

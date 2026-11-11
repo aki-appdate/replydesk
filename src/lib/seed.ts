@@ -124,7 +124,7 @@ function vary(body: string, rand: () => number): string {
   );
 }
 
-/** 未対応として今日〜昨日に残しておく問い合わせ（デモで見せたいものを必ず含める） */
+/** 未対応として残しておく問い合わせ（デモで見せたいものを必ず含める）。置く時刻は createSeedData で now から逆算する */
 const OPEN_SHOWCASE: [number, number][] = [
   [0, 0], [13, 0], [2, 0], [1, 0], [0, 1], [7, 0], [16, 0], [15, 0], [17, 1], [5, 0], [12, 0], [9, 1],
 ];
@@ -195,17 +195,32 @@ export function createSeedData(now: Date = new Date()): SeedData {
   };
   const sv = STAFF.find((s) => s.role === "sv")!;
   const OPEN = OPEN_SHOWCASE.length;
+  const TODAY_DONE = 4;
+
+  const minutesAgo = (min: number) => new Date(now.getTime() - Math.round(min) * 60 * 1000);
 
   for (let i = 0; i < TOTAL; i++) {
-    // 古いものから順に、直近14日間へ散らす。最後の12件は今日〜昨日の未対応
     const unanswered = i >= TOTAL - OPEN;
-    const dayOffset = unanswered ? -Math.floor(rand() * 2) : -(14 - Math.floor((i / (TOTAL - OPEN)) * 13));
-    const received = addDays(today, dayOffset);
-    received.setHours(8 + Math.floor(rand() * 14), Math.floor(rand() * 60), 0, 0);
-    if (received > now) received.setTime(now.getTime() - (i + 1) * 7 * 60 * 1000);
-
     // 未対応の直前の3件は、担当者がSVに相談して判断待ちになっているもの（SV画面で見せるため）
     const pendingSv = !unanswered && i >= TOTAL - OPEN - PENDING_SV.length;
+    // その前の4件は、今日届いて今日のうちに返信したもの（SV画面の「今日」が空にならないように）
+    const doneToday = !unanswered && !pendingSv && i >= TOTAL - OPEN - PENDING_SV.length - TODAY_DONE;
+
+    let received: Date;
+    if (unanswered) {
+      // 最後の12件は未対応。どれも now より前に置く（今日の0時直後に開いても未来の時刻にならない）。
+      // 最初の2件は24時間以上たったもの（受信箱の「24時間以上」に出る）、残りはここ数時間に届いたもの
+      const k = i - (TOTAL - OPEN);
+      received = k < 2 ? minutesAgo((28 - k * 2.5) * 60 + rand() * 40) : minutesAgo((OPEN - k) * (25 + rand() * 15));
+    } else if (doneToday) {
+      const k = i - (TOTAL - OPEN - PENDING_SV.length - TODAY_DONE);
+      received = minutesAgo((9 - k * 1.5) * 60 + rand() * 30);
+    } else {
+      // 古いものから順に、直近14日〜2日前へ散らす
+      received = addDays(today, -(14 - Math.floor((i / (TOTAL - OPEN)) * 13)));
+      received.setHours(8 + Math.floor(rand() * 14), Math.floor(rand() * 60), 0, 0);
+    }
+    received.setSeconds(0, 0);
     const [ti, vi] = unanswered ? OPEN_SHOWCASE[i - (TOTAL - OPEN)] : pendingSv ? PENDING_SV[i - (TOTAL - OPEN - PENDING_SV.length)] : [pickTemplate(), -1];
     const t = TEMPLATES[ti];
     const bi = vi >= 0 ? vi % t.bodies.length : Math.floor(rand() * t.bodies.length);
@@ -223,7 +238,7 @@ export function createSeedData(now: Date = new Date()): SeedData {
     if (unanswered) continue;
 
     const draft = sampleReplyDraft(inquiry, ARTICLES);
-    const at = workingHours(new Date(received.getTime() + (30 + Math.floor(rand() * 600)) * 60 * 1000));
+    const at = workingHours(new Date(received.getTime() + (doneToday ? 15 + Math.floor(rand() * 60) : 30 + Math.floor(rand() * 600)) * 60 * 1000));
     if (at > now) continue;
     const escalated = draft.escalation.needed;
     // 慣れた担当者は、短い質問ならAIを使わずに自分で書くこともある

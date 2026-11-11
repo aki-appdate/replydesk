@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AiSourceBadge, btn, cx, Icon } from "./ui";
 import { analyzeGaps } from "@/lib/ai";
 import { formatDateTimeJa } from "@/lib/dates";
@@ -34,6 +34,19 @@ export function GapPanel({ gaps }: { gaps: Inquiry[] }) {
     setState(await analyzeGaps(gaps));
     setLoading(false);
   }
+
+  // 付箋にふれたら、光った行が左の束のスクロールの外にあれば見える位置まで送る。
+  // scrollIntoView({ block: "nearest" }) と同じ動きを、束の中だけで行う（ページ全体は動かさない）
+  const listRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>("[data-lit=true]");
+    if (!list || !row) return;
+    const top = row.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+    const bottom = top + row.offsetHeight;
+    if (top < list.scrollTop) list.scrollTo({ top, behavior: "smooth" });
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTo({ top: bottom - list.clientHeight, behavior: "smooth" });
+  }, [active]);
 
   // 根拠のダイアログは Esc でも閉じる
   useEffect(() => {
@@ -140,15 +153,16 @@ export function GapPanel({ gaps }: { gaps: Inquiry[] }) {
               <span className="font-bold text-ink-soft">マニュアルにない質問</span>
               <span className="tabular-nums">{gaps.length}件</span>
             </p>
-            <ul className="max-h-[30rem] overflow-y-auto overscroll-contain border-t border-line max-lg:max-h-[20rem]">
+            <ul ref={listRef} className="max-h-[30rem] overflow-y-auto overscroll-contain border-t border-line max-lg:max-h-[20rem]">
               {gaps.map((q) => {
                 const n = evidenceOf.get(q.body);
                 const lit = activeBodies.has(q.body);
                 return (
-                  <li key={q.id} className="border-b border-line last:border-b-0">
+                  <li key={q.id} data-lit={lit} className="border-b border-line last:border-b-0">
                     <button className={cx("block w-full px-5 py-3 text-left transition-colors", lit ? "bg-note" : "hover:bg-paper")} onClick={() => setOpen(q)}>
                       <span className="line-clamp-2 font-serif text-sm leading-relaxed text-ink">「{excerpt(q.body, 60)}」</span>
-                      <span className="mt-1 flex items-center gap-2 text-[11px] text-ink-muted">
+                      {/* 付箋の黄色の上では ink-muted だと文字が薄いので、光っている間は濃くする */}
+                      <span className={cx("mt-1 flex items-center gap-2 text-[11px]", lit ? "text-ink-soft" : "text-ink-muted")}>
                         <span className="truncate">{q.subject}</span>
                         <span className="ml-auto shrink-0 tabular-nums">{formatDateTimeJa(q.receivedAt)}</span>
                       </span>

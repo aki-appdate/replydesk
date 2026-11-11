@@ -16,7 +16,7 @@ const STYLE: Record<State, { icon: "check" | "stop" | "alert" | "cross" | "user"
 export type GateInput = {
   /** AIの案がないとき（自分で書く）は null */
   citations: CheckedCitation[] | null;
-  risky: { match: string; reason: string }[];
+  risky: { match: string; reason: string; severity: "stop" | "caution" }[];
   escalation: { needed: boolean; reason: string | null };
   isSv: boolean;
 };
@@ -31,9 +31,12 @@ export function gateStates({ citations, risky, escalation, isSv }: GateInput) {
         : invalid > 0
           ? { state: "caution", detail: `${citations.length}件中${invalid}件がマニュアルで確認できません。返信から外すか、確かめてください。` }
           : { state: "pass", detail: `${citations.length}件すべて、マニュアルにある文と一致しました。` };
-  const wording: { state: State; detail: string } = risky.length
-    ? { state: "stop", detail: `約束してはいけない言い回しが${risky.length}件あります。直すまで送信できません。` }
-    : { state: "pass", detail: "返金・補償・「必ず」などの約束する言い回しはありません。" };
+  const stops = risky.filter((r) => r.severity === "stop").length;
+  const wording: { state: State; detail: string } = stops
+    ? { state: "stop", detail: `約束してはいけない言い回しが${stops}件あります。直すまで送信できません。` }
+    : risky.length
+      ? { state: "caution", detail: `返金・補償を約束する文が${risky.length}件あります。SVとして判断した内容か確かめてから送ってください。` }
+      : { state: "pass", detail: "返金・補償・「必ず」などの約束する言い回しはありません。" };
   const judge: { state: State; detail: string } = escalation.needed
     ? isSv
       ? { state: "caution", detail: "SVの判断が必要な内容です。判断したうえで送信してください。" }

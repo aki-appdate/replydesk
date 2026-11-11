@@ -11,6 +11,7 @@ import { btn, cx, Icon } from "@/components/ui";
 import { detectEscalation, sampleReplyDraft } from "@/lib/ai/sample";
 import { formatDateTimeJa } from "@/lib/dates";
 import { ARTICLES } from "@/lib/knowledge";
+import { STAFF } from "@/lib/seed";
 import { checkCitations, findRiskyPhrases } from "@/lib/text";
 import type { Inquiry } from "@/lib/types";
 
@@ -41,12 +42,14 @@ const CASES = [
     pain: "担当者によって、間違った約束をしてしまう",
     inquiry: "ガチャの演出中にアプリが落ちました。使った星のかけらはどうなりますか？",
     before: "ご迷惑をおかけしたお詫びとして、星のかけらをお送りします。",
+    beforeNote: "お詫びの品を担当者が約束している。補償は担当者だけでは決められない",
     after: { kind: "quote", quote: "この不具合で引けなかったガチャの星のかけらは消費されず、手元に残っています。", note: "約束ではなく、マニュアルにある事実だけを伝える" },
   },
   {
     pain: "担当者が判断してはいけない話がまぎれる",
     inquiry: "小学生の息子が、私のスマホで勝手に課金していました。",
     before: "今回に限り、返金いたします。",
+    beforeNote: "返金を担当者が約束している。返金の判断はSVの仕事",
     after: { kind: "sv" },
   },
   {
@@ -59,14 +62,15 @@ const CASES = [
 ] as const;
 
 export default function Home() {
-  const { staff, setMe } = useApp();
+  const { setMe } = useApp();
   const router = useRouter();
   const start = (id: string, to: string) => {
     setMe(id);
     router.push(to);
   };
-  const sv = staff.find((s) => s.role === "sv");
-  const agent = staff.find((s) => s.role === "agent");
+  // 利用者は固定（デモの4人）なので、読み込みを待たずにボタンを押せるようにする
+  const sv = STAFF.find((s) => s.role === "sv")!;
+  const agent = STAFF.find((s) => s.role === "agent")!;
 
   // 見本：ルールベースの「見本の返答」が実際に作る案と、照合・検知の結果
   const demo = useMemo(() => {
@@ -138,11 +142,11 @@ export default function Home() {
           </p>
 
           <div className="mt-9 flex flex-wrap gap-3">
-            <button className={cx(btn.primary, "min-h-12 px-6 text-base")} disabled={!agent} onClick={() => agent && start(agent.id, "/inbox")}>
+            <button className={cx(btn.primary, "min-h-12 px-6 text-base")} onClick={() => start(agent.id, "/inbox")}>
               担当者として返信してみる
               <Icon name="arrow-right" />
             </button>
-            <button className={cx(btn.secondary, "min-h-12 px-6 text-base")} disabled={!sv} onClick={() => sv && start(sv.id, "/insights")}>
+            <button className={cx(btn.secondary, "min-h-12 px-6 text-base")} onClick={() => start(sv.id, "/insights")}>
               SV（現場リーダー）の画面を見る
             </button>
           </div>

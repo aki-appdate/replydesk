@@ -65,7 +65,8 @@ export default function InboxPage() {
         <div id="inquiry-detail" className="min-w-0 scroll-mt-28">
           {selected ? (
             <InquiryDetail
-              key={selected.inquiry.id}
+              // 利用者を切り替えたら作り直す（担当者の「SVに相談しました」をSVの画面に残さない）
+              key={`${selected.inquiry.id}:${me?.id ?? ""}`}
               inquiry={selected.inquiry}
               onSending={() => setSelectedId(selected.inquiry.id)}
               onNext={() => {

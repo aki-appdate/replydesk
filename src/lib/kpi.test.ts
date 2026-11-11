@@ -75,6 +75,39 @@ describe("24時間以内の対応率", () => {
     const range = { from: addDays(startOfDay(NOW), -14), to: addDays(startOfDay(NOW), 1) };
     const now = computeDeskStats({ ...d, ...range, now: NOW });
     const later = computeDeskStats({ ...d, ...range, now: addDays(NOW, 3) });
-    expect(later.within24hRate).toBeLessThan(now.within24hRate);
+    expect(later.within24hRate!).toBeLessThan(now.within24hRate!);
+  });
+
+  it("数えられる問い合わせがない期間は 0% ではなく null（画面では「—」）", () => {
+    const d = createSeedData(NOW);
+    const future = { from: addDays(startOfDay(NOW), 5), to: addDays(startOfDay(NOW), 6) };
+    const s = computeDeskStats({ ...d, ...future, now: NOW });
+    expect(s.received).toBe(0);
+    expect(s.within24hRate).toBeNull();
+  });
+});
+
+describe("デモデータの「今日」", () => {
+  it.each([
+    ["昼", new Date(2026, 10, 11, 14, 22)],
+    ["夕方", new Date(2026, 10, 11, 19, 0)],
+  ])("%s に開くと、今日届いた問い合わせと今日の対応がある", (_, now) => {
+    const d = createSeedData(now);
+    const s = computeDeskStats({ ...d, from: startOfDay(now), to: addDays(startOfDay(now), 1), now });
+    expect(s.received).toBeGreaterThanOrEqual(8);
+    expect(s.open).toBeGreaterThan(0);
+    expect(s.within24hRate).not.toBeNull();
+  });
+
+  it.each([new Date(2026, 10, 11, 0, 5), new Date(2026, 10, 11, 6, 0), new Date(2026, 10, 11, 23, 59)])("%s でも未来の時刻を作らない", (now) => {
+    const d = createSeedData(now);
+    expect(d.inquiries.every((q) => new Date(q.receivedAt) <= now)).toBe(true);
+    expect(d.replies.every((r) => new Date(r.at) <= now)).toBe(true);
+  });
+
+  it("未対応のうち2件は24時間以上たっている（受信箱の「24時間以上」に出る）", () => {
+    const d = createSeedData(NOW);
+    const over = d.inquiries.filter((q) => q.status === "new" && NOW.getTime() - new Date(q.receivedAt).getTime() > 24 * 3600 * 1000);
+    expect(over.length).toBeGreaterThanOrEqual(2);
   });
 });

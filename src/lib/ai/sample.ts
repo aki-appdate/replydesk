@@ -29,15 +29,40 @@ export function detectSentiment(text: string): Sentiment {
   return "calm";
 }
 
-const ESCALATION_RULES: { pattern: RegExp; reason: string }[] = [
-  { pattern: /未成年|子ども|子供|息子|娘|小学生|中学生|高校生|親の(カード|クレジット)/, reason: "未成年の課金の可能性があるため" },
-  { pattern: /返金|返して|金返せ|払い戻|(購入|課金|決済).{0,10}(キャンセル|取り消)|(キャンセル|取り消).{0,10}(購入|課金|決済)|チャージバック/, reason: "返金の判断は担当者ではできないため" },
-  { pattern: /消費者センター|弁護士|訴え|訴訟|法的|警察/, reason: "法的な対応が必要になる可能性があるため" },
-  { pattern: /(アカウント|利用|垢).{0,6}停止|停止(され|処分)|BAN|ＢＡＮ|凍結/i, reason: "利用停止の判断は担当者ではできないため" },
+// 文・節に分ける（「返金はいりません、ログインできません」の打ち消しを、後ろの節に広げないため）
+const splitSentences = (text: string) => text.split(/[。！？!?\n]/).filter((x) => x.trim());
+const splitClauses = (text: string) => text.split(/[。！？!?\n、，,]|けど|ですが|ますが/).filter((x) => x.trim());
+
+// お金の話（未成年の判定で、「息子と協力プレイ」「子供の頃から好き」を外すため）
+const MONEY = /課金|購入|買|決済|請求|カード|かけら|円|お金|支払|ガチャ/;
+const MINOR = /子ども|子供|息子|娘|うちの子|孫|小学生|中学生|高校生|甥|姪/;
+// 返金を求めていない言い方
+const NO_REFUND = /いりません|いらない|不要|結構です|求めて(い)?ません|望んで(い)?ません|しなくて(大丈夫|いい)/;
+
+const ESCALATION_RULES: { test: (text: string) => boolean; reason: string }[] = [
+  {
+    test: (t) => /未成年|親の(カード|クレジット)/.test(t) || splitSentences(t).some((s) => MINOR.test(s) && MONEY.test(s)),
+    reason: "未成年の課金の可能性があるため",
+  },
+  {
+    test: (t) => /不正(利用|請求|使用)|身に覚えのない(課金|請求|購入|決済)|(勝手に|無断で).{0,4}(課金|購入|決済)|乗っ取/.test(t),
+    reason: "身に覚えのない課金・不正利用の可能性があるため",
+  },
+  {
+    test: (t) =>
+      splitClauses(t).some(
+        (c) =>
+          /返金|払い?戻|金返せ|(お金|代金|料金|課金(した)?分|購入分|かけら代).{0,6}(返して|戻して)|(購入|課金|決済).{0,10}(キャンセル|取り消)|(キャンセル|取り消).{0,10}(購入|課金|決済)|チャージバック/.test(c) &&
+          !NO_REFUND.test(c),
+      ),
+    reason: "返金の判断は担当者ではできないため",
+  },
+  { test: (t) => /消費者センター|弁護士|訴え|訴訟|法的|警察/.test(t), reason: "法的な対応が必要になる可能性があるため" },
+  { test: (t) => /(アカウント|利用|垢).{0,6}停止|停止(され|処分)|BAN|ＢＡＮ|凍結/i.test(t), reason: "利用停止の判断は担当者ではできないため" },
 ];
 
 export function detectEscalation(text: string): ReplyDraft["escalation"] {
-  for (const r of ESCALATION_RULES) if (r.pattern.test(text)) return { needed: true, reason: r.reason };
+  for (const r of ESCALATION_RULES) if (r.test(text)) return { needed: true, reason: r.reason };
   return { needed: false, reason: null };
 }
 
@@ -125,7 +150,7 @@ export function sampleReplyDraft(inquiry: Inquiry, articles: Article[]): ReplyDr
 
 /** マニュアルに載っていない質問を、話題ごとにまとめる */
 const TOPICS: { label: string; pattern: RegExp; benefit: string }[] = [
-  { label: "フレンド機能", pattern: /フレンド/, benefit: "申請・上限・解除の3つの質問が混ざって届いています。仕様を1つの記事にまとめれば、担当者がその都度開発チームに確認する手間がなくなります" },
+  { label: "フレンド機能", pattern: /フレンド/, benefit: "申請の届き方・上限・解除など、フレンドの仕様を1つの記事にまとめておけば、担当者がその都度開発チームに確認する手間がなくなります" },
   { label: "プレイヤー名の変更", pattern: /名前|ニックネーム|名前の変更/, benefit: "変更できるか・何回までかを担当者ごとに違う答え方をしている恐れがあります。回数や条件を決めて記事にすると答えがそろいます" },
   { label: "退会・データ削除", pattern: /退会|削除|消したい/, benefit: "データを消すと元に戻せないため、手順と注意点をはっきり書いた記事が必要です。誤って案内すると取り返しがつきません" },
   { label: "領収書の発行", pattern: /領収書|インボイス/, benefit: "購入はストア経由のため、ストアの購入履歴の出し方を案内する記事があれば、担当者がすぐ答えられます" },
