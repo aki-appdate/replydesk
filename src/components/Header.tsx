@@ -98,17 +98,20 @@ export function Header() {
               押すのは下の本物の select（透明）なので、端末の選択画面と読み上げはそのまま使える。
             */}
             <span className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-line-strong bg-surface pr-6 pl-1.5 text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand sm:hidden">
-              <span
-                aria-hidden="true"
-                className={cx(
-                  "rounded-[3px] px-1 text-[10px] leading-4 font-bold",
-                  me?.role === "sv" ? "border-t-2 border-warn bg-warn-soft text-warn" : "bg-brand-soft text-brand",
-                )}
-              >
-                {me?.role === "sv" ? "SV" : "担当者"}
-              </span>
-              <span aria-hidden="true" className="max-w-[6.5em] truncate text-[13px] font-medium">
-                {me?.name ?? "選ぶ"}
+              {/* 読み込み中（利用者がまだ決まっていない間）は札も名前も出さず、別の人に見えないようにする */}
+              {me && (
+                <span
+                  aria-hidden="true"
+                  className={cx(
+                    "rounded-[3px] px-1 text-[10px] leading-4 font-bold",
+                    me.role === "sv" ? "border-t-2 border-warn bg-warn-soft text-warn" : "bg-brand-soft text-brand",
+                  )}
+                >
+                  {me.role === "sv" ? "SV" : "担当者"}
+                </span>
+              )}
+              <span aria-hidden="true" className={cx("max-w-[6.5em] truncate text-[13px] font-medium", !me && "w-[5em] text-ink-muted")}>
+                {me ? me.name : "…"}
               </span>
               <svg aria-hidden="true" viewBox="0 0 12 12" className="absolute right-2 size-3 text-ink-muted" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
                 <path d="m3 4.5 3 3 3-3" />
