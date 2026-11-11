@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useApp } from "@/components/AppProvider";
 import { InquiryList, type InboxTab } from "@/components/inbox/InquiryList";
 import { InquiryDetail } from "@/components/inbox/InquiryDetail";
-import { Stat } from "@/components/ui";
+import { cx, Icon } from "@/components/ui";
 import { useNow } from "@/components/useNow";
 import { triage } from "@/lib/triage";
 
@@ -32,21 +32,22 @@ export default function InboxPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold">受信箱</h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          {me?.name}さん、未対応の問い合わせは急ぎのものから並んでいます。AIの返信案は、根拠を確かめてから送ってください。
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div className="max-w-xl">
+          <h1 className="font-serif text-2xl font-bold">受信箱</h1>
+          <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+            {me?.name}さん、未対応は急ぎのものから並んでいます。返信案は、根拠を確かめてから送ってください。
+          </p>
+        </div>
+        <dl className="grid w-full grid-cols-2 rounded-[10px] border border-line bg-surface sm:w-auto sm:grid-cols-4">
+          <Count label="未対応" value={lists.new.length} />
+          <Count label="うち急ぎ" value={urgent} tone={urgent ? "bad" : undefined} note="課金・強い怒りなど" />
+          <Count label="24時間以上" value={over24h} tone={over24h ? "bad" : undefined} icon={over24h > 0} note="目標は24時間以内" />
+          <Count label="SVに相談中" value={lists.escalated.length} />
+        </dl>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="未対応" value={lists.new.length} sub="件" />
-        <Stat label="うち急ぎ" value={urgent} sub="件（課金・強い怒りなど）" />
-        <Stat label="受信から24時間以上" value={<span className={over24h ? "text-bad" : undefined}>{over24h}</span>} sub="件（目標は24時間以内）" />
-        <Stat label="SVに相談中" value={lists.escalated.length} sub="件" />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,23rem)_1fr]">
         <InquiryList
           tab={tab}
           onTab={(t) => {
@@ -61,7 +62,7 @@ export default function InboxPage() {
             if (window.innerWidth < 1024) requestAnimationFrame(() => document.getElementById("inquiry-detail")?.scrollIntoView({ behavior: "smooth" }));
           }}
         />
-        <div id="inquiry-detail" className="scroll-mt-28">
+        <div id="inquiry-detail" className="min-w-0 scroll-mt-28">
           {selected ? (
             <InquiryDetail
               key={selected.inquiry.id}
@@ -73,10 +74,29 @@ export default function InboxPage() {
               }}
             />
           ) : (
-            <p className="rounded-xl border border-dashed border-line p-10 text-center text-sm text-ink-muted">この一覧に問い合わせはありません。</p>
+            <div className="rounded-[10px] border border-dashed border-line-strong p-12 text-center">
+              <Icon name="mail" className="mx-auto size-6 text-ink-muted" />
+              <p className="mt-2 font-serif font-bold">この一覧に問い合わせはありません</p>
+              <p className="mt-1 text-sm text-ink-muted">ほかのタブも見てみてください。</p>
+            </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function Count({ label, value, tone, note, icon }: { label: string; value: number; tone?: "bad"; note?: string; icon?: boolean }) {
+  return (
+    <div className="border-line px-4 py-2.5 max-sm:[&:nth-child(-n+2)]:border-b max-sm:[&:nth-child(even)]:border-l sm:[&+&]:border-l" title={note}>
+      <dt className={cx("flex items-center gap-1 text-xs whitespace-nowrap", tone ? "font-medium text-bad" : "text-ink-muted")}>
+        {icon && <Icon name="clock" className="size-3.5" />}
+        {label}
+      </dt>
+      <dd className={cx("mt-0.5 text-2xl leading-tight font-bold", tone && "text-bad")}>
+        {value}
+        <span className="ml-0.5 text-xs font-medium">件</span>
+      </dd>
     </div>
   );
 }

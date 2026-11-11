@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useApp } from "../AppProvider";
-import { AiSourceBadge, Badge, Card, CardTitle } from "../ui";
+import { AiSourceBadge, Badge, Card, CardTitle, cx, Icon } from "../ui";
 import { STATUS_LABEL } from "@/lib/labels";
 import { formatDateTimeJa } from "@/lib/dates";
 import { searchArticles } from "@/lib/text";
@@ -23,22 +23,29 @@ export function InquiryDetail({ inquiry, onSending, onNext }: { inquiry: Inquiry
   return (
     <div className="space-y-5">
       <Card>
-        <div className="px-5 py-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-bold">{inquiry.subject}</h2>
-            <Badge tone={inquiry.status === "new" ? "brand" : inquiry.status === "escalated" ? "warn" : "good"}>{STATUS_LABEL[inquiry.status]}</Badge>
-          </div>
-          <p className="mt-1 text-xs text-ink-muted">
-            {formatDateTimeJa(inquiry.receivedAt)} 受信
+        <div className="px-5 pt-5 pb-4 sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
+            <span className="flex items-center gap-1">
+              <Icon name="mail" className="size-3.5" />
+              <span className="tabular-nums">{formatDateTimeJa(inquiry.receivedAt)}</span> 受信
+            </span>
             {inquiry.status === "new" && (
-              <span className={waitedH > 24 ? "ml-2 font-medium text-bad" : "ml-2"}>（{waitedH < 1 ? "1時間以内" : `${Math.floor(waitedH)}時間経過`}）</span>
+              <span className={cx("flex items-center gap-1", waitedH > 24 ? "font-bold text-bad" : "")}>
+                <Icon name="clock" className="size-3.5" />
+                {waitedH < 1 ? "1時間以内" : `${Math.floor(waitedH)}時間経過`}
+                {waitedH > 24 && "（目標の24時間を超えています）"}
+              </span>
             )}
-          </p>
-          <p className="mt-4 whitespace-pre-wrap leading-relaxed text-ink">{inquiry.body}</p>
+            <Badge tone={inquiry.status === "new" ? "brand" : inquiry.status === "escalated" ? "warn" : "good"} className="ml-auto">
+              {STATUS_LABEL[inquiry.status]}
+            </Badge>
+          </div>
+          <h2 className="mt-3 font-serif text-xl leading-snug font-bold">{inquiry.subject}</h2>
+          <p className="mt-3 font-serif text-[15px] leading-[1.9] whitespace-pre-wrap text-ink">{inquiry.body}</p>
         </div>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-line px-5 py-3 text-sm sm:grid-cols-3">
+        <dl className="grid grid-cols-2 border-t border-line bg-paper text-sm sm:grid-cols-3">
           <Item label="プレイヤー名" value={inquiry.playerName} />
-          <Item label="プレイヤーID" value={inquiry.playerId} />
+          <Item label="プレイヤーID" value={inquiry.playerId} mono />
           <Item label="端末" value={inquiry.device} />
         </dl>
       </Card>
@@ -55,22 +62,36 @@ export function InquiryDetail({ inquiry, onSending, onNext }: { inquiry: Inquiry
         />
       )}
 
+      {!canCompose && !justSaved && inquiry.status === "escalated" && (
+        <p className="flex items-center gap-2 rounded-[10px] border border-warn/30 bg-warn-soft px-5 py-3 text-sm text-warn">
+          <Icon name="user" />
+          SVが判断して返信します。SVに切り替えると、この問い合わせに返信できます。
+        </p>
+      )}
+
       {thread.length > 0 && (
         <Card>
           <CardTitle>対応の記録</CardTitle>
           <ol className="divide-y divide-line">
             {thread.map((r) => (
-              <li key={r.id} className="px-5 py-4">
+              <li key={r.id} className="px-5 py-4 sm:px-6">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                  <Badge tone={r.kind === "sent" ? "good" : "warn"}>
+                    <Icon name={r.kind === "sent" ? "send" : "user"} className="size-3" />
+                    {r.kind === "sent" ? "返信を送信" : "SVに相談"}
+                  </Badge>
                   <span className="tabular-nums">{formatDateTimeJa(r.at)}</span>
                   <span>{staff.find((s) => s.id === r.staffId)?.name}</span>
-                  <Badge tone={r.kind === "sent" ? "good" : "warn"}>{r.kind === "sent" ? "返信を送信" : "SVに相談"}</Badge>
                   {r.aiSource && <AiSourceBadge source={r.aiSource} />}
                 </div>
-                <p className="mt-2 whitespace-pre-wrap rounded-lg bg-canvas p-3 text-sm leading-relaxed">{r.body}</p>
+                <p className="mt-2.5 rounded-lg border border-line bg-paper px-4 py-3 font-serif text-sm leading-[1.9] whitespace-pre-wrap">{r.body}</p>
                 {r.citedArticleIds.length > 0 && (
-                  <p className="mt-2 text-xs text-ink-soft">
-                    根拠：{r.citedArticleIds.map((id) => articles.find((a) => a.id === id)?.title).filter(Boolean).join("、")}
+                  <p className="mt-2 flex items-start gap-1 text-xs text-good">
+                    <Icon name="check" className="mt-px size-3.5" />
+                    <span>
+                      根拠（マニュアルと一致）：
+                      <span className="text-ink-soft">{r.citedArticleIds.map((id) => articles.find((a) => a.id === id)?.title).filter(Boolean).join("、")}</span>
+                    </span>
                   </p>
                 )}
               </li>
@@ -82,11 +103,11 @@ export function InquiryDetail({ inquiry, onSending, onNext }: { inquiry: Inquiry
   );
 }
 
-function Item({ label, value }: { label: string; value: string }) {
+function Item({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div>
-      <dt className="text-xs text-ink-muted">{label}</dt>
-      <dd className="mt-0.5 break-all text-ink">{value}</dd>
+    <div className="px-5 py-2.5 sm:px-6 max-sm:[&:nth-child(-n+2)]:border-b max-sm:[&:nth-child(-n+2)]:border-line">
+      <dt className="text-[11px] text-ink-muted">{label}</dt>
+      <dd className={cx("mt-0.5 break-all text-ink", mono && "tabular-nums")}>{value}</dd>
     </div>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useApp } from "../AppProvider";
-import { AiSourceBadge, Badge, btn, Card, CardTitle, cx } from "../ui";
+import { AiSourceBadge, Badge, btn, Card, CardTitle, cx, Icon } from "../ui";
+import { SafetyGate } from "./SafetyGate";
 import { draftReply } from "@/lib/ai";
 import { detectEscalation } from "@/lib/ai/sample";
 import { CATEGORY_LABEL, SENTIMENT_LABEL, URGENCY_LABEL } from "@/lib/labels";
@@ -77,46 +78,60 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
 
   if (done) {
     return (
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <p className="text-sm text-good">✓ {done}</p>
+      <Card className="border-good/30">
+        <div role="status" className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <p className="flex items-center gap-2 text-sm font-medium text-good">
+            <span className="grid size-6 place-items-center rounded-full bg-good text-white">
+              <Icon name="check" className="size-3.5" />
+            </span>
+            {done}
+          </p>
           <button className={btn.primary} onClick={onNext}>
-            次の問い合わせへ →
+            次の問い合わせへ
+            <Icon name="arrow-right" />
           </button>
         </div>
       </Card>
     );
   }
 
+  const sendBlocked = phase === "sending" || !body.trim() || risky.length > 0 || blockedByEscalation;
+
   return (
     <Card>
       <CardTitle aside={draft && <AiSourceBadge source={source} />}>返信を作る</CardTitle>
-      <div className="space-y-4 px-5 py-4">
+      <div className="space-y-5 px-5 py-5">
         <div>
-          <p className="text-xs font-medium text-ink-soft">参考になりそうなマニュアル</p>
+          <p className="flex items-center gap-1.5 text-xs font-bold text-ink-soft">
+            <Icon name="book" className="size-3.5" />
+            参考になりそうなマニュアル
+          </p>
           {matches.length ? (
-            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+            <ul className="mt-2 flex flex-wrap gap-1.5">
               {matches.map((a) => (
-                <li key={a.id}>
-                  <Badge>{a.title}</Badge>
+                <li key={a.id} className="rounded-md border border-line bg-paper px-2 py-0.5 text-xs text-ink">
+                  {a.title}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-1.5 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+            <p className="mt-2 flex gap-2 rounded-lg bg-warn-soft px-3 py-2.5 text-sm leading-relaxed text-warn">
+              <Icon name="alert" className="mt-0.5" />
               近い記事が見つかりません。マニュアルにない質問の可能性があります。推測で答えず、必要ならSVに相談してください。
             </p>
           )}
         </div>
 
         {(phase === "idle" || phase === "drafting") && (
-          <div className="flex flex-wrap gap-2">
-            <button className={btn.primary} onClick={runAi} disabled={phase === "drafting"}>
-              {phase === "drafting" ? "AIが返信案を作っています…" : "✦ AIで返信案を作る"}
+          <div className="flex flex-wrap items-center gap-2 border-t border-line pt-5">
+            <button className={btn.primary} onClick={runAi} disabled={phase === "drafting"} aria-busy={phase === "drafting"}>
+              <Icon name="sparkle" className={phase === "drafting" ? "animate-pulse" : undefined} />
+              {phase === "drafting" ? "マニュアルを読んで返信案を作っています…" : "AIで返信案を作る"}
             </button>
             <button className={btn.secondary} onClick={writeManually} disabled={phase === "drafting"}>
               自分で書く
             </button>
+            <p className="w-full pt-1 text-xs text-ink-muted">どちらの場合も、送る前に「根拠・言い回し・判断」の3つを確かめます。</p>
           </div>
         )}
 
@@ -125,50 +140,61 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
             {note && <p className="text-xs text-ink-soft">{note}</p>}
 
             {escalation.needed && (
-              <div className="rounded-lg border border-warn/40 bg-warn-soft p-3 text-sm text-warn">
-                <p className="font-medium">⚠ {isSv ? "SVの判断が必要な内容です" : "SVへの相談が必要な内容です"}</p>
-                <p className="mt-0.5">{escalation.reason ?? "担当者だけで判断してはいけない内容です。"}</p>
+              <div role="note" className="flex gap-3 rounded-lg border border-warn/30 bg-warn-soft px-4 py-3 text-sm text-warn">
+                <Icon name="user" className="mt-0.5 size-5" />
+                <div>
+                  <p className="font-bold">{isSv ? "SVの判断が必要な内容です" : "SVへの相談が必要な内容です"}</p>
+                  <p className="mt-0.5 leading-relaxed">{escalation.reason ?? "担当者だけで判断してはいけない内容です。"}</p>
+                </div>
               </div>
             )}
 
             {draft && (
-              <div className="space-y-3 rounded-xl border border-brand/30 bg-brand-soft/40 p-4">
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="font-medium text-ink">AIの見立て</span>
-                  <Badge>{CATEGORY_LABEL[draft.category]}</Badge>
-                  <Badge tone={draft.urgency === "high" ? "bad" : "neutral"}>{URGENCY_LABEL[draft.urgency]}</Badge>
-                  <Badge tone={draft.sentiment === "angry" ? "bad" : "neutral"}>{SENTIMENT_LABEL[draft.sentiment]}</Badge>
+              <div className="space-y-4 rounded-[10px] bg-paper p-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="mr-1 flex items-center gap-1 font-bold text-ink">
+                      <Icon name="sparkle" className="size-3.5 text-brand" />
+                      AIの見立て
+                    </span>
+                    <Badge>{CATEGORY_LABEL[draft.category]}</Badge>
+                    <Badge tone={draft.urgency === "high" ? "bad" : "neutral"}>{URGENCY_LABEL[draft.urgency]}</Badge>
+                    <Badge tone={draft.sentiment === "angry" ? "bad" : "neutral"}>{SENTIMENT_LABEL[draft.sentiment]}</Badge>
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-ink">{draft.summary}</p>
                 </div>
-                <p className="text-sm text-ink">{draft.summary}</p>
-
 
                 <div>
-                  <p className="text-xs font-medium text-ink-soft">
-                    根拠にした記事の文
-                    {invalidCount > 0 && <span className="ml-2 text-bad">（{invalidCount}件はマニュアルで確認できません）</span>}
+                  <p className="text-xs font-bold text-ink-soft">
+                    根拠にしたマニュアルの文
+                    {invalidCount > 0 && <span className="ml-2 text-bad">{invalidCount}件はマニュアルで確認できません</span>}
                   </p>
                   {citations.length ? (
-                    <ul className="mt-1.5 space-y-1.5">
+                    <ul className="mt-2 space-y-2">
                       {citations.map((c, i) => (
-                        <li key={i} className={cx("rounded-lg border px-3 py-2 text-sm", c.valid ? "border-line bg-surface" : "border-bad/40 bg-bad-soft")}>
-                          <p className={c.valid ? "text-ink" : "text-bad"}>「{c.quote}」</p>
-                          <p className="mt-0.5 text-xs text-ink-muted">
-                            {c.valid ? `✓ ${c.articleTitle}` : "✗ この文はマニュアルにありません。返信から外すか、内容を確かめてください"}
+                        <li key={i} className={cx("rounded-r-lg border-l-[3px] bg-surface py-2 pr-3 pl-3", c.valid ? "border-good" : "border-bad bg-bad-soft")}>
+                          <p className={cx("font-serif text-[15px] leading-relaxed", c.valid ? "text-ink" : "text-bad")}>「{c.quote}」</p>
+                          <p className={cx("mt-1 flex items-center gap-1 text-xs", c.valid ? "text-good" : "font-bold text-bad")}>
+                            <Icon name={c.valid ? "check" : "cross"} className="size-3.5" />
+                            {c.valid ? <>マニュアルと一致：{c.articleTitle}</> : "この文はマニュアルにありません。返信から外すか、内容を確かめてください"}
                           </p>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-1.5 text-sm text-ink-muted">根拠にした文はありません（回答ではなく、確認・相談の返信です）。</p>
+                    <p className="mt-2 text-sm text-ink-muted">根拠にした文はありません（回答ではなく、確認・相談の返信です）。</p>
                   )}
                 </div>
 
                 {draft.missingInfo.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-ink-soft">お客さまに確認したいこと</p>
-                    <ul className="mt-1 list-inside list-disc text-sm text-ink">
+                    <p className="text-xs font-bold text-ink-soft">お客さまに確認したいこと</p>
+                    <ul className="mt-1.5 space-y-1 text-sm text-ink">
                       {draft.missingInfo.map((m) => (
-                        <li key={m}>{m}</li>
+                        <li key={m} className="flex gap-2">
+                          <span aria-hidden="true" className="mt-2.5 h-px w-2 shrink-0 bg-ink-muted" />
+                          {m}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -177,9 +203,12 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
             )}
 
             <div>
-              <label htmlFor="reply-body" className="text-xs font-medium text-ink-soft">
-                返信文（自由に直せます）
-              </label>
+              <div className="flex items-end justify-between gap-2">
+                <label htmlFor="reply-body" className="text-xs font-bold text-ink-soft">
+                  返信文<span className="ml-1.5 font-normal text-ink-muted">自由に直せます</span>
+                </label>
+                <span className="text-[11px] text-ink-muted tabular-nums">{body.length}/2000</span>
+              </div>
               <textarea
                 id="reply-body"
                 value={body}
@@ -187,30 +216,46 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
                 rows={12}
                 maxLength={2000}
                 disabled={phase === "sending"}
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm leading-relaxed disabled:bg-canvas"
+                aria-invalid={risky.length > 0}
+                aria-describedby={risky.length ? "risky-list" : undefined}
+                className={cx(
+                  "mt-1.5 w-full rounded-lg border bg-surface px-4 py-3 font-serif text-[15px] leading-[1.9] disabled:bg-paper",
+                  risky.length ? "border-bad" : "border-line-strong focus:border-brand",
+                )}
               />
               {risky.length > 0 && (
-                <ul className="mt-2 space-y-1">
+                <ul id="risky-list" className="mt-2 space-y-1.5" aria-live="polite">
                   {risky.map((r) => (
-                    <li key={r.match} className="rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">
-                      ⚠「{r.match}」— {r.reason}
+                    <li key={r.match} className="flex gap-2 rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">
+                      <Icon name="stop" className="mt-0.5" />
+                      <span>
+                        <b className="font-serif">「{r.match}」</b>　{r.reason}
+                      </span>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <SafetyGate citations={draft ? citations : null} risky={risky} escalation={escalation} isSv={isSv} />
+
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 className={btn.primary}
-                disabled={phase === "sending" || !body.trim() || risky.length > 0 || blockedByEscalation}
+                disabled={sendBlocked}
                 onClick={() => submit("sent")}
                 title={risky.length ? "注意が必要な表現を直すと送信できます" : blockedByEscalation ? "SVに相談してください" : undefined}
               >
+                <Icon name="send" />
                 {phase === "sending" ? "送信しています…" : "確認したので送信する"}
               </button>
               {!isSv && (
-                <button className={btn.secondary} disabled={phase === "sending" || !body.trim()} onClick={() => submit("escalated")}>
+                <button
+                  className={cx(btn.secondary, blockedByEscalation && "border-warn text-warn hover:border-warn hover:text-warn")}
+                  disabled={phase === "sending" || !body.trim()}
+                  onClick={() => submit("escalated")}
+                >
+                  <Icon name="user" />
                   SVに相談する
                 </button>
               )}
@@ -223,10 +268,14 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
                 {blockedByEscalation ? "担当者の判断で送れない内容のため、SVへの相談だけができます。" : "注意が必要な表現があるため、直すまで送信できません。"}
               </p>
             )}
-            {isSv && escalation.needed && <p className="text-xs text-ink-muted">SVとして内容を判断したうえで送信してください。</p>}
           </>
         )}
-        {error && <p className="text-sm text-bad">{error}</p>}
+        {error && (
+          <p role="alert" className="flex items-center gap-2 text-sm text-bad">
+            <Icon name="alert" />
+            {error}
+          </p>
+        )}
       </div>
     </Card>
   );

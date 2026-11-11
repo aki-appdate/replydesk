@@ -3,19 +3,31 @@
 // データ（localStorage または Firestore）を読み終えるまで画面を出さない外枠
 import { Header } from "@/components/Header";
 import { useApp } from "@/components/AppProvider";
+import { Icon } from "@/components/ui";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { ready, error } = useApp();
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="mx-auto max-w-7xl px-4 pt-6 pb-16">
         {error ? (
-          <p className="rounded-lg bg-bad-soft p-4 text-sm text-bad">{error}</p>
+          <div role="alert" className="flex items-start gap-3 rounded-[10px] border border-bad/30 bg-bad-soft p-4 text-sm text-bad">
+            <Icon name="alert" className="mt-0.5" />
+            <div>
+              <p className="font-bold">{error}</p>
+              <button className="mt-2 underline underline-offset-4" onClick={() => location.reload()}>
+                再読み込みする
+              </button>
+            </div>
+          </div>
         ) : ready ? (
           children
         ) : (
-          <p className="py-20 text-center text-sm text-ink-muted">読み込んでいます…</p>
+          <div className="py-24 text-center" role="status" aria-live="polite">
+            <Icon name="star" className="mx-auto size-5 animate-pulse fill-star text-star" />
+            <p className="mt-3 text-sm text-ink-muted">問い合わせとマニュアルを読み込んでいます…</p>
+          </div>
         )}
       </main>
     </>
