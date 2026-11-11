@@ -303,3 +303,12 @@ describe("findRiskyPhrases：7回目の点検（承知しました→次の文�
   });
 });
 
+describe("findRiskyPhrases：デザイン確認で見つかった「必ず」の抜け", () => {
+  it.each(["必ず明日までに反映します。", "必ず次のアップデートで修正いたします。"])("止める：%s", (t) => {
+    expect(findRiskyPhrases(t).map((r) => r.severity)).toContain("stop");
+  });
+  it("「必ずご返信いたします」は約束しすぎではないので通す", () => {
+    expect(findRiskyPhrases("必ずご返信いたします。")).toEqual([]);
+  });
+});
+
