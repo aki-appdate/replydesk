@@ -6,13 +6,25 @@ import { useState } from "react";
 import { useApp } from "./AppProvider";
 import { AiSourceBadge, cx, Icon } from "./ui";
 
-/** ロゴ：夜空の紺に、星の金 */
+/**
+ * ロゴの印：夜空の紺の封筒を、星の金の封蝋で閉じたもの（返信の手紙に、確かめたしるし）。
+ * 角丸の箱に星を入れただけの形にはしない。
+ */
+export function LogoMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true" className={cx("shrink-0", className)}>
+      <rect x="2.5" y="7" width="27" height="19" rx="2" className="fill-brand" />
+      <path d="M3.5 8.2 16 18.2l12.5-10" fill="none" strokeWidth="1.75" strokeLinejoin="round" className="stroke-canvas" />
+      <circle cx="16" cy="18.2" r="5.2" className="fill-star stroke-brand" strokeWidth="1.5" />
+      <path d="m16 15.1.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3Z" className="fill-brand" />
+    </svg>
+  );
+}
+
 export function Logo({ size = "md" }: { size?: "md" | "lg" }) {
   return (
     <span className="flex items-center gap-2">
-      <span aria-hidden="true" className={cx("grid place-items-center rounded-lg bg-brand", size === "lg" ? "size-9" : "size-7")}>
-        <Icon name="star" className={cx("fill-star text-star", size === "lg" ? "size-4.5" : "size-3.5")} />
-      </span>
+      <LogoMark className={size === "lg" ? "size-9" : "size-7"} />
       <span className={cx("font-serif font-bold tracking-tight text-ink", size === "lg" ? "text-lg" : "text-base")}>ReplyDesk</span>
     </span>
   );

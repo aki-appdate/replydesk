@@ -1,7 +1,7 @@
 "use client";
 
 // データ（localStorage または Firestore）を読み終えるまで画面を出さない外枠
-import { Header } from "@/components/Header";
+import { Header, LogoMark } from "@/components/Header";
 import { useApp } from "@/components/AppProvider";
 import { Icon } from "@/components/ui";
 
@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           children
         ) : (
           <div className="py-24 text-center" role="status" aria-live="polite">
-            <Icon name="star" className="mx-auto size-5 animate-pulse fill-star text-star" />
+            <LogoMark className="mx-auto size-8 animate-pulse" />
             <p className="mt-3 text-sm text-ink-muted">問い合わせとマニュアルを読み込んでいます…</p>
           </div>
         )}

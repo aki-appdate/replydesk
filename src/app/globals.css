@@ -2,8 +2,11 @@
 
 /*
  * 色はここで決めた名前だけを使う。画面ごとに色を足さない。
- * 方針：生成りの紙に、夜空の紺。星の金はロゴと小さな印だけ。
- * 安全のしるし（✓根拠・止まる言い回し・SVに相談）は good / bad / warn で、必ず記号と文章を添える。
+ * 方針：生成りの紙に、夜空の紺。星の金はロゴの封蝋と小さな印だけ。
+ * たとえは「便箋と赤ペンの校正」。安全のしるしは校正の記号で見せる：
+ *   根拠＝緑の ✓（good）／言い回し＝赤ペンの丸囲みと「トル」（bad）／判断＝「SVへ」の付箋（warn）。
+ *   どれも色だけでなく、記号と文章を必ず添える。
+ * 付箋（note）は「記事の下書き」専用。注意（warn）には使わない。
  * 詳しくは docs/design.md。
  */
 @theme {
@@ -27,6 +30,9 @@
   --color-warn-soft: #fbf0d6;
   --color-bad: #b3261e;
   --color-bad-soft: #fbe9e6;
+  /* 付箋：SVが貼る「記事の下書き」。黄色の紙で、注意の色とは形（折れた角・のり代）で見分ける */
+  --color-note: #f8edbc;
+  --color-note-edge: #e6d48a;
   /* グラフ：1系列は1色 */
   --color-chart: #2a3766;
   --color-chart-muted: #c3c8da;
@@ -64,6 +70,28 @@ h3 {
 
 .on-night :focus-visible {
   outline-color: var(--color-star);
+}
+
+/* 便箋の罫線。文字の行の高さ（2rem）と罫線の間隔をそろえる */
+.ruled {
+  background-image: linear-gradient(to bottom, transparent calc(2rem - 1px), var(--color-line) calc(2rem - 1px));
+  background-size: 100% 2rem;
+  line-height: 2rem;
+}
+
+/* 付箋（記事の下書き）：右下の角が少し折れている。影は使わない */
+.sticky-note {
+  position: relative;
+  background: linear-gradient(315deg, transparent 12px, var(--color-note) 12px);
+}
+.sticky-note::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 17px;
+  height: 17px;
+  background: linear-gradient(315deg, transparent 50%, var(--color-note-edge) 50%);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useApp } from "@/components/AppProvider";
 import { BarList } from "@/components/Charts";
 import { GapPanel } from "@/components/GapPanel";
-import { Card, CardTitle, cx, Icon, pct } from "@/components/ui";
+import { Card, CardTitle, cx, pct } from "@/components/ui";
 import { addDays, startOfDay, startOfWeek } from "@/lib/dates";
 import { computeDeskStats, formatMinutes } from "@/lib/kpi";
 import { CATEGORY_LABEL } from "@/lib/labels";
@@ -40,7 +40,7 @@ export default function InsightsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="max-w-xl">
           <h1 className="font-serif text-2xl font-bold">SVダッシュボード</h1>
-          <p className="mt-1 text-sm leading-relaxed text-ink-soft">対応の速さ、AIの返信案の使われ方、マニュアルの穴を確かめます。</p>
+          <p className="mt-1 text-sm leading-relaxed text-ink-soft">対応の速さと返信案の使われ方を読み、マニュアルに足す記事を決めます。</p>
         </div>
         <div className="flex rounded-lg border border-line-strong bg-surface p-0.5" role="tablist" aria-label="集計期間">
           {RANGES.map((r) => (
@@ -57,30 +57,48 @@ export default function InsightsPage() {
         </div>
       </div>
 
-      {/* 数字の帯：24時間以内の対応率を主役に */}
-      <dl className="grid overflow-hidden rounded-[10px] border border-line bg-surface md:grid-cols-[1.4fr_1fr_1fr_1fr]">
-        <div className="border-b border-line px-5 py-4 md:border-r md:border-b-0">
-          <dt className="text-xs font-medium text-ink-soft">24時間以内に対応できた割合（{rangeLabel}）</dt>
-          <dd className="mt-1 text-5xl leading-none font-bold tracking-tight">{pct(s.within24hRate)}</dd>
-          <dd className="mt-3">
-            <span className="block h-2 overflow-hidden rounded-full bg-brand-soft" aria-hidden="true">
-              <span className="block h-full rounded-full bg-brand" style={{ width: `${Math.min(100, s.within24hRate * 100)}%` }} />
-            </span>
-            <span className="mt-1.5 block text-xs text-ink-muted">
-              最初の対応まで平均 <b className="font-medium text-ink">{formatMinutes(s.avgFirstResponseMin)}</b>
-            </span>
-          </dd>
+      {/* 主役の数字は1つ（24時間以内の対応率）。ほかの数字は申し送りの文に入れて読ませる */}
+      <section aria-label={`${rangeLabel}の申し送り`} className="grid overflow-hidden rounded-[10px] border border-line bg-surface lg:grid-cols-[22rem_1fr]">
+        <div className="border-b border-line px-6 py-5 lg:border-r lg:border-b-0">
+          <p className="text-xs font-medium text-ink-soft">24時間以内に対応できた割合</p>
+          <p className="mt-2 text-[3.5rem] leading-none font-bold tracking-tight">{pct(s.within24hRate)}</p>
+          <div className="mt-4 h-2 rounded-full bg-brand-soft" role="img" aria-label={`目標の24時間以内に対応できた割合 ${pct(s.within24hRate)}`}>
+            <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, s.within24hRate * 100)}%` }} />
+          </div>
+          <p className="mt-2 text-xs text-ink-muted">
+            最初の対応まで平均 <b className="font-medium text-ink">{formatMinutes(s.avgFirstResponseMin)}</b>
+          </p>
         </div>
-        <Figure label="受信" value={s.received} unit="件" sub={`未対応 ${s.open}件・SV相談 ${s.escalated}件`} />
-        <Figure label="AI返信案の採用率" value={s.aiAdoption === null ? "—" : pct(s.aiAdoption)} sub={`AI案を使った返信 ${pct(s.aiUsedRate)}`} />
-        <Figure
-          label="マニュアルにない質問"
-          value={s.gaps.length}
-          unit="件"
-          sub={s.gaps.length ? "記事を足す候補・下で確認" : "この期間はありません"}
-          tone={s.gaps.length ? "warn" : undefined}
-        />
-      </dl>
+        <div className="px-6 py-5">
+          <p className="flex items-baseline justify-between gap-3 text-xs text-ink-muted">
+            <span className="font-bold tracking-wider text-ink-soft">申し送り</span>
+            <span>{rangeLabel}の集計</span>
+          </p>
+          <div className="ruled mt-1 max-w-[42em] font-serif text-[15px] text-ink">
+            <p>
+              届いた問い合わせは<Num>{s.received}件</Num>。未対応が<Num tone={s.open ? "bad" : undefined}>{s.open}件</Num>、SVに相談中が<Num>{s.escalated}件</Num>あります。
+            </p>
+            <p>
+              {s.aiAdoption === null ? (
+                <>この期間、AIの返信案を使った返信はまだありません。</>
+              ) : (
+                <>
+                  送った返信のうち<Num>{pct(s.aiUsedRate)}</Num>がAIの返信案を使い、送った文はAIの案と平均<Num>{pct(s.aiAdoption)}</Num>同じでした（採用率）。
+                </>
+              )}
+            </p>
+            <p>
+              {s.gaps.length ? (
+                <>
+                  マニュアルに近い記事がない質問が<Num tone="warn">{s.gaps.length}件</Num>。下で記事の下書きにまとめます。
+                </>
+              ) : (
+                <>マニュアルで答えられない質問はありませんでした。</>
+              )}
+            </p>
+          </div>
+        </div>
+      </section>
 
       <GapPanel key={range} gaps={s.gaps} />
 
@@ -109,18 +127,7 @@ export default function InsightsPage() {
   );
 }
 
-function Figure({ label, value, unit, sub, tone }: { label: string; value: React.ReactNode; unit?: string; sub?: string; tone?: "warn" }) {
-  return (
-    <div className="border-b border-line px-5 py-4 last:border-b-0 md:border-b-0 md:[&+&]:border-l">
-      <dt className={cx("flex items-center gap-1 text-xs font-medium", tone ? "text-warn" : "text-ink-soft")}>
-        {tone && <Icon name="book" className="size-3.5" />}
-        {label}
-      </dt>
-      <dd className={cx("mt-1.5 text-3xl leading-none font-bold tracking-tight", tone && "text-warn")}>
-        {value}
-        {unit && <span className="ml-0.5 text-sm font-medium">{unit}</span>}
-      </dd>
-      {sub && <dd className="mt-1.5 text-xs text-ink-muted">{sub}</dd>}
-    </div>
-  );
+/** 申し送りの文の中の数字。太字・等幅で、文から浮かせる */
+function Num({ children, tone }: { children: React.ReactNode; tone?: "bad" | "warn" }) {
+  return <b className={cx("mx-0.5 font-sans whitespace-nowrap font-bold tabular-nums", tone === "bad" ? "text-bad" : tone === "warn" ? "text-warn" : "text-ink")}>{children}</b>;
 }

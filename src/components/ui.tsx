@@ -11,7 +11,7 @@ const base =
   "inline-flex items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed";
 
 export const btn = {
-  primary: `${base} min-h-10 bg-brand px-4 py-2 text-white hover:bg-brand-strong disabled:bg-line-strong disabled:text-surface`,
+  primary: `${base} min-h-10 bg-brand px-4 py-2 text-white hover:bg-brand-strong disabled:border disabled:border-line-strong disabled:bg-canvas disabled:text-ink-muted`,
   secondary: `${base} min-h-10 border border-line-strong bg-surface px-4 py-2 text-ink hover:border-brand hover:text-brand disabled:text-ink-muted disabled:hover:border-line-strong`,
   ghost: `${base} px-2.5 py-1.5 text-ink-soft hover:bg-brand-soft hover:text-brand disabled:text-ink-muted`,
 };
@@ -59,7 +59,7 @@ export function AiSourceBadge({ source, onDark = false }: { source: AiSource; on
         onDark ? "border-white/20 text-white/80" : "border-line-strong text-ink-soft",
       )}
     >
-      <Icon name="sparkle" className="size-3.5" />
+      <Icon name="nib" className="size-3.5" />
       {source === "gemini" ? "AI：Gemini" : "AI：見本の返答"}
     </span>
   );
@@ -73,7 +73,8 @@ export function pct(n: number): string {
 
 type IconName =
   | "minus"
-  | "sparkle"
+  | "nib"
+  | "note"
   | "check"
   | "cross"
   | "stop"
@@ -89,7 +90,23 @@ type IconName =
   | "mail";
 
 const PATHS: Record<IconName, React.ReactNode> = {
-  sparkle: <path d="M12 4c.6 3.8 2.2 5.4 6 6-3.8.6-5.4 2.2-6 6-.6-3.8-2.2-5.4-6-6 3.8-.6 5.4-2.2 6-6Z" />,
+  // 万年筆のペン先：AIが「下書き」したもの。✧のような飾り記号は使わない
+  nib: (
+    <g transform="rotate(45 12 12)">
+      <path d="M12 22 6.8 13.2 8.6 4h6.8l1.8 9.2Z" />
+      <path d="M12 22v-8.3" />
+      <circle cx="12" cy="12" r="1.3" />
+      <path d="M8.6 4h6.8" />
+    </g>
+  ),
+  // 付箋：記事の下書き
+  note: (
+    <>
+      <path d="M5 4.5h14v10l-5 5H5Z" />
+      <path d="M14 19.5v-5h5" />
+      <path d="M8.5 9h7M8.5 12.5h4" />
+    </>
+  ),
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   minus: <path d="M7 12h10" />,
   cross: <path d="M7 7l10 10M17 7 7 17" />,

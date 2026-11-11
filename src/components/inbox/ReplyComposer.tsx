@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useApp } from "../AppProvider";
 import { AiSourceBadge, Badge, btn, Card, CardTitle, cx, Icon } from "../ui";
 import { SafetyGate } from "./SafetyGate";
+import { RedCircle, ToruNote } from "../proof";
 import { draftReply } from "@/lib/ai";
 import { detectEscalation } from "@/lib/ai/sample";
 import { CATEGORY_LABEL, SENTIMENT_LABEL, URGENCY_LABEL } from "@/lib/labels";
@@ -125,7 +126,7 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
         {(phase === "idle" || phase === "drafting") && (
           <div className="flex flex-wrap items-center gap-2 border-t border-line pt-5">
             <button className={btn.primary} onClick={runAi} disabled={phase === "drafting"} aria-busy={phase === "drafting"}>
-              <Icon name="sparkle" className={phase === "drafting" ? "animate-pulse" : undefined} />
+              <Icon name="nib" className={phase === "drafting" ? "animate-pulse" : undefined} />
               {phase === "drafting" ? "マニュアルを読んで返信案を作っています…" : "AIで返信案を作る"}
             </button>
             <button className={btn.secondary} onClick={writeManually} disabled={phase === "drafting"}>
@@ -154,7 +155,7 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
                 <div>
                   <div className="flex flex-wrap items-center gap-1.5 text-xs">
                     <span className="mr-1 flex items-center gap-1 font-bold text-ink">
-                      <Icon name="sparkle" className="size-3.5 text-brand" />
+                      <Icon name="nib" className="size-3.5 text-brand" />
                       AIの見立て
                     </span>
                     <Badge>{CATEGORY_LABEL[draft.category]}</Badge>
@@ -226,11 +227,9 @@ export function ReplyComposer({ inquiry, matches, onSending, onNext }: { inquiry
               {risky.length > 0 && (
                 <ul id="risky-list" className="mt-2 space-y-1.5" aria-live="polite">
                   {risky.map((r) => (
-                    <li key={r.match} className="flex gap-2 rounded-lg bg-bad-soft px-3 py-2 text-sm text-bad">
-                      <Icon name="stop" className="mt-0.5" />
-                      <span>
-                        <b className="font-serif">「{r.match}」</b>　{r.reason}
-                      </span>
+                    <li key={r.match} className="rounded-lg border border-bad/30 bg-surface px-3 py-2.5 text-sm">
+                      <RedCircle block className="font-serif text-bad">「{r.match}」</RedCircle>
+                      <ToruNote reason={`${r.reason}。直すまで送信できません`} className="mt-2 flex text-[13px]" />
                     </li>
                   ))}
                 </ul>
