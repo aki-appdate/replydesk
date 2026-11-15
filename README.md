@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/aki-appdate/replydesk/actions/workflows/ci.yml/badge.svg)](https://github.com/aki-appdate/replydesk/actions/workflows/ci.yml)
 
+**デモ：** https://replydesk-iota.vercel.app （ログイン不要。公開中のデモは Firebase につないでいないため、AIの部分は見本の返答で動きます）
+
 ユーザーからの問い合わせに、**社内マニュアルだけを根拠に**AIが返信案を作り、担当者が確認してから送るWebアプリです。
 ゲームアプリのメール問い合わせ対応でSV（5〜6名のチームリーダー）をしていた筆者が、現場で感じた課題をもとに作りました。設計・仕様決め・動作確認は筆者、実装は Claude Code（AIコーディングツール）です。
 
@@ -54,7 +56,7 @@
 | AI | Firebase AI Logic + Gemini（Gemini Developer API の無料枠・Spark プラン） |
 | セキュリティ | Firestore セキュリティルール（[firestore.rules](firestore.rules)）、App Check（reCAPTCHA v3） |
 | 品質 | Vitest（単体テスト）、ESLint、GitHub Actions（push・PRで lint・型・テスト・ビルドを走らせる設定） |
-| 公開 | Vercel（予定） |
+| 公開 | Vercel（https://replydesk-iota.vercel.app） |
 
 ```
 src/
